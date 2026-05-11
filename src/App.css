@@ -91,6 +91,8 @@
 .agent-select,
 .menu-button,
 .back-button,
+.prototype-menu-trigger,
+.prototype-menu-popover button,
 .lookup-row button,
 .bottom-cta button,
 .inline-action,
@@ -107,6 +109,8 @@
 .agent-select:focus-visible,
 .menu-button:focus-visible,
 .back-button:focus-visible,
+.prototype-menu-trigger:focus-visible,
+.prototype-menu-popover button:focus-visible,
 .lookup-row button:focus-visible,
 .bottom-cta button:focus-visible,
 .inline-action:focus-visible,
@@ -158,6 +162,70 @@
   color: #ffffff;
 }
 
+.compact-header {
+  position: relative;
+  min-height: 54px;
+  padding: 12px 12px 18px;
+}
+
+.compact-header h1 {
+  flex: 1;
+}
+
+.prototype-menu {
+  position: relative;
+  margin-left: auto;
+}
+
+.prototype-menu-trigger {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.prototype-menu-popover {
+  position: absolute;
+  top: 38px;
+  right: 0;
+  z-index: 5;
+  display: grid;
+  gap: 4px;
+  min-width: 132px;
+  padding: 8px;
+  border: 1px solid #d5dee9;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16);
+}
+
+.prototype-menu-popover span {
+  padding: 3px 6px 5px;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.prototype-menu-popover button {
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: transparent;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.prototype-menu-popover button.active {
+  background: #f4fdff;
+  color: #0a7f95;
+}
+
 .back-button {
   justify-content: center;
   width: 31px;
@@ -202,7 +270,7 @@ h4 {
 }
 
 .content-stack {
-  margin-top: -14px;
+  margin-top: -8px;
   padding-bottom: 86px;
 }
 
@@ -222,73 +290,6 @@ h4 {
   border-radius: 8px 8px 0 0;
 }
 
-.prototype-switcher {
-  padding: 12px 16px;
-  border-top: 1px solid #dbe6f2;
-  border-bottom: 1px solid #dbe6f2;
-  background: #ffffff;
-}
-
-.prototype-switcher + .card {
-  margin-top: 8px;
-}
-
-.prototype-switcher-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.prototype-switcher-header span,
-.prototype-switcher p {
-  color: #667085;
-  font-size: 11px;
-  line-height: 1.35;
-}
-
-.prototype-switcher-header strong {
-  display: block;
-  margin-top: 2px;
-  color: #344054;
-  font-size: 13px;
-}
-
-.prototype-switcher select {
-  width: 104px;
-  min-height: 36px;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.prototype-switcher p {
-  margin-top: 8px;
-}
-
-.prototype-links {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-  margin-top: 10px;
-}
-
-.prototype-links a {
-  display: grid;
-  place-items: center;
-  min-height: 30px;
-  border: 1px solid #d5dee9;
-  border-radius: 8px;
-  color: #667085;
-  font-size: 11px;
-  font-weight: 800;
-  text-decoration: none;
-}
-
-.prototype-links a.active {
-  border-color: #15aeca;
-  background: #f4fdff;
-  color: #127b91;
-}
 
 .concept-card .callout {
   margin-top: 0;

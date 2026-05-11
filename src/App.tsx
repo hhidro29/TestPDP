@@ -3,13 +3,10 @@ import {
   ArrowLeft,
   Check,
   CheckCircle2,
-  ChevronDown,
   ChevronRight,
   Info,
-  Menu,
   MoreVertical,
   Plus,
-  UserRound,
   X,
 } from 'lucide-react'
 import { type ReactNode, useMemo, useState } from 'react'
@@ -27,7 +24,7 @@ type LookupState =
   | 'new-available'
   | 'new-registered'
 type CalloutVariant = 'info' | 'warning' | 'danger' | 'success'
-type PrototypeOptionId = '1' | '2' | '3' | '4'
+type PrototypeOptionId = '1' | '2' | '3'
 type ContactOwner = 'child' | 'parent' | null
 type ProfileTarget = 'existing' | 'new' | null
 type WizardStep = 1 | 2 | 3 | 4 | 5
@@ -84,17 +81,10 @@ const prototypeOptions: Array<{
     summary: 'Agent dipandu menentukan akun dan profil tujuan paket, sambil mengonversi akun lama bila diperlukan.',
     steps: ['Cari customer', 'Tentukan tujuan paket', 'Isi data orang tua', 'Isi profil anak', 'Review pembelian'],
   },
-  {
-    id: '4',
-    label: 'Opsi 4',
-    title: 'Account Console',
-    summary: 'Agent melihat struktur akun lebih eksplisit sebelum menentukan profil tujuan paket.',
-    steps: ['Cari customer', 'Lihat struktur akun', 'Resolve parent-child', 'Aktifkan paket'],
-  },
 ]
 
 function isPrototypeOptionId(value: string | null): value is PrototypeOptionId {
-  return value === '1' || value === '2' || value === '3' || value === '4'
+  return value === '1' || value === '2' || value === '3'
 }
 
 function getInitialPrototypeOption(): PrototypeOptionId {
@@ -222,8 +212,7 @@ function App() {
   const isExistingFlow = accountStatus === 'existing'
   const isOptionTwo = prototypeOption === '2'
   const isOptionThree = prototypeOption === '3'
-  const isOptionFour = prototypeOption === '4'
-  const usesMappingDecision = isOptionTwo || isOptionThree || isOptionFour
+  const usesMappingDecision = isOptionTwo || isOptionThree
   const hasContactOwnerDecision = !usesMappingDecision || contactOwner !== null
   const parentContactSelected = usesMappingDecision ? contactOwner === 'parent' : usesParentIdentity
   const parentLookupAccount = getLookupParentAccount(lookupState)
@@ -433,12 +422,15 @@ function App() {
   return (
     <main className="app-shell">
       <section className="device-shell" aria-label="Prototype opsi 1">
-        <AppChrome title={isOptionThree ? 'Tujuan Pembelian' : 'Draft Invoice'} />
+        <AppChrome
+          selected={prototypeOption}
+          title={isOptionThree ? 'Tujuan Pembelian' : 'Draft Invoice'}
+          onOptionChange={handlePrototypeOptionChange}
+        />
 
         <div className="content-stack">
-          <PrototypeOptionSwitcher selected={prototypeOption} onChange={handlePrototypeOptionChange} />
           {!isOptionThree && <OrderCard />}
-          {prototypeOption === '1' || prototypeOption === '2' || prototypeOption === '3' || prototypeOption === '4' ? (
+          {prototypeOption === '1' || prototypeOption === '2' || prototypeOption === '3' ? (
             <PurchasePurposeCard
               accountStatus={accountStatus}
               childName={childName}
@@ -447,7 +439,7 @@ function App() {
               checkNumber={checkNumber}
               grade={grade}
               isBeforeAfterMapping={isOptionThree}
-              isExplicitMapping={isOptionTwo || isOptionFour}
+              isExplicitMapping={isOptionTwo}
               lookupState={lookupState}
               setWizardStep={setWizardStep}
               childEmail={childEmail}
@@ -519,40 +511,36 @@ function App() {
   )
 }
 
-function AppChrome({ title = 'Draft Invoice' }: { title?: string }) {
+function AppChrome({ selected, title = 'Draft Invoice', onOptionChange }: { selected: PrototypeOptionId; title?: string; onOptionChange: (option: PrototypeOptionId) => void }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const handleOptionClick = (option: PrototypeOptionId) => {
+    onOptionChange(option)
+    setMenuOpen(false)
+  }
+
   return (
-    <>
-      <div className="status-bar">
-        <span>9:41</span>
-        <span className="status-icons">LTE WiFi 100</span>
-      </div>
-
-      <div className="browser-bar">
-        <div className="address-pill">https://bayar.ruangguru.com</div>
-        <MoreVertical size={18} />
-      </div>
-
-      <nav className="product-nav" aria-label="Navigasi produk">
-        <div className="rg-logo">ruang<br />guru</div>
-        <div className="nav-actions">
-          <button className="agent-select" type="button">
-            <span className="avatar"><UserRound size={15} /></span>
-            Agent
-            <ChevronDown size={14} />
-          </button>
-          <button className="menu-button" type="button" aria-label="Menu">
-            <Menu size={21} />
-          </button>
-        </div>
-      </nav>
-
-      <header className="invoice-header">
-        <button className="back-button" type="button" aria-label="Kembali">
-          <ArrowLeft size={19} />
+    <header className="invoice-header compact-header">
+      <button className="back-button" type="button" aria-label="Kembali">
+        <ArrowLeft size={19} />
+      </button>
+      <h1>{title}</h1>
+      <div className="prototype-menu">
+        <button className="prototype-menu-trigger" type="button" aria-expanded={menuOpen} aria-label="Pilih opsi prototype" onClick={() => setMenuOpen(!menuOpen)}>
+          <MoreVertical size={18} />
         </button>
-        <h1>{title}</h1>
-      </header>
-    </>
+        {menuOpen && (
+          <div className="prototype-menu-popover" role="menu" aria-label="Opsi prototype">
+            <span>Mode Prototype</span>
+            {prototypeOptions.map((option) => (
+              <button className={option.id === selected ? 'active' : ''} key={option.id} type="button" role="menuitem" onClick={() => handleOptionClick(option.id)}>
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </header>
   )
 }
 
@@ -637,37 +625,6 @@ function PriceLine() {
         <strong>Rp889.000</strong>
       </div>
     </div>
-  )
-}
-
-function PrototypeOptionSwitcher({ selected, onChange }: { selected: PrototypeOptionId; onChange: (option: PrototypeOptionId) => void }) {
-  const selectedOption = prototypeOptions.find((option) => option.id === selected) ?? prototypeOptions[0]
-
-  return (
-    <section className="prototype-switcher" aria-label="Pilih opsi prototype">
-      <div className="prototype-switcher-header">
-        <div>
-          <span>Mode Prototype</span>
-          <strong>{selectedOption.title}</strong>
-        </div>
-        <select value={selected} onChange={(event) => onChange(event.target.value as PrototypeOptionId)}>
-          {prototypeOptions.map((option) => (
-            <option key={option.id} value={option.id}>{option.label}</option>
-          ))}
-        </select>
-      </div>
-      <p>{selectedOption.summary}</p>
-      <div className="prototype-links">
-        {prototypeOptions.map((option) => (
-          <a className={option.id === selected ? 'active' : ''} href={`?option=${option.id}`} key={option.id} onClick={(event) => {
-            event.preventDefault()
-            onChange(option.id)
-          }}>
-            {option.label}
-          </a>
-        ))}
-      </div>
-    </section>
   )
 }
 
