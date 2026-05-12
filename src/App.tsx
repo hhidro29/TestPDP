@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Info,
+  Lock,
   MoreVertical,
   Plus,
   X,
@@ -31,6 +32,7 @@ type CalloutVariant = 'info' | 'warning' | 'danger' | 'success'
 type PrototypeOptionId = '1' | '2' | '3'
 type ContactOwner = 'child' | 'parent' | null
 type ProfileTarget = 'existing' | 'new' | null
+type PackageIntent = 'renewal' | 'upgrade' | 'additional' | null
 type WizardStep = 1 | 2 | 3 | 4 | 5
 type ChildProfile = {
   contact?: string
@@ -132,6 +134,18 @@ const parentAccountWithoutChildren: ParentProfileAccount = {
   name: 'Maya Lestari',
   phone: '081399880044',
   profiles: [],
+}
+
+const packageIntentLabels: Record<Exclude<PackageIntent, null>, string> = {
+  renewal: 'Renewal',
+  upgrade: 'Upgrade',
+  additional: 'Paket tambahan',
+}
+
+const packageIntentDescriptions: Record<Exclude<PackageIntent, null>, string> = {
+  renewal: 'Perpanjang paket yang sedang aktif.',
+  upgrade: 'Naikkan paket atau benefit dari profil ini.',
+  additional: 'Beli paket lain tanpa mengubah paket aktif.',
 }
 
 const singleChildProfileSearchResults: ChildProfile[] = [
@@ -286,6 +300,28 @@ function getChildProfileParentCount(profiles: ChildProfile[]) {
   return new Set(profiles.map((profile) => profile.parentPhone)).size
 }
 
+function normalizeProfileName(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+function getDuplicateProfileMatches(profiles: ChildProfile[], childName: string) {
+  const normalizedChildName = normalizeProfileName(childName)
+
+  if (normalizedChildName.length < 3) return []
+
+  return profiles.filter((profile) => {
+    const normalizedProfileName = normalizeProfileName(profile.name)
+
+    return normalizedProfileName === normalizedChildName
+      || normalizedProfileName.includes(normalizedChildName)
+      || normalizedChildName.includes(normalizedProfileName)
+  })
+}
+
+function getPackageIntentLabel(value: PackageIntent) {
+  return value ? packageIntentLabels[value] : '-'
+}
+
 function isChildProfileContact(phone: string) {
   return phone.replace(/\D/g, '').includes('700111')
 }
@@ -362,6 +398,8 @@ function App() {
   const [reviewOpen, setReviewOpen] = useState(false)
   const [doneOpen, setDoneOpen] = useState(false)
   const [consent, setConsent] = useState(false)
+  const [packageIntent, setPackageIntent] = useState<PackageIntent>(null)
+  const [duplicateProfileAcknowledged, setDuplicateProfileAcknowledged] = useState(false)
 
   const isExistingFlow = accountStatus === 'existing'
   const isOptionTwo = prototypeOption === '2'
@@ -372,21 +410,25 @@ function App() {
   const parentLookupAccount = getLookupParentAccount(lookupState)
   const selectedChildSearchProfile = childProfileSearchResults.find((profile) => profile.id === selectedChildSearchProfileId) ?? null
   const selectedChildProfile = parentLookupAccount?.profiles.find((profile) => profile.id === selectedChildProfileId) ?? selectedChildSearchProfile
-  const searchProfileReady = Boolean(isSearchResolutionLookup(lookupState) && selectedChildSearchProfile)
   const shouldCreateProfileForParent = Boolean(parentLookupAccount && profileTarget === 'new')
+  const duplicateProfileMatches = parentLookupAccount && shouldCreateProfileForParent ? getDuplicateProfileMatches(parentLookupAccount.profiles, childName) : []
+  const duplicateProfileBlocking = duplicateProfileMatches.length > 0 && !duplicateProfileAcknowledged
+  const selectedProfileHasActivePackage = Boolean(selectedChildProfile?.hasActivePackage)
+  const packageIntentReady = !selectedProfileHasActivePackage || packageIntent !== null
+  const searchProfileReady = Boolean(isSearchResolutionLookup(lookupState) && selectedChildSearchProfile && packageIntentReady)
   const showMigrationForm = isExistingFlow && lookupState === 'existing-old-account' && hasContactOwnerDecision
   const showNewAccountForm = accountStatus === 'new' && lookupState === 'new-available'
-  const effectiveParentPhone = parentLookupAccount?.phone ?? (showNewAccountForm ? parentPhone || phone : parentContactSelected ? parentPhone || phone : parentPhone)
+  const effectiveParentPhone = parentLookupAccount?.phone ?? (showNewAccountForm ? parentPhone || phone : parentContactSelected ? phone : parentPhone)
   const effectiveParentAccount = parentContactSelected ? null : getRegisteredParentAccount(effectiveParentPhone)
-  const effectiveParentName = parentLookupAccount?.name ?? (parentName || effectiveParentAccount?.name || '')
+  const effectiveParentName = parentLookupAccount?.name ?? (effectiveParentAccount?.name || parentName || '')
   const effectiveChildName = selectedChildProfile?.name ?? (showMigrationForm && !parentContactSelected ? childName || existingAccount.name : childName)
   const parentDataReady = Boolean(canCheckParentPhone(effectiveParentPhone) && effectiveParentName.trim())
-  const multipleMatchReady = Boolean(lookupState === 'existing-multiple-matches' && selectedChildSearchProfile)
+  const multipleMatchReady = Boolean(lookupState === 'existing-multiple-matches' && selectedChildSearchProfile && packageIntentReady)
   const childProfileFormReady = Boolean(childName.trim() && grade)
   const childDataReady = Boolean(effectiveChildName.trim() && (selectedChildProfile ? true : grade))
   const parentProfileTargetReady = Boolean(
     parentLookupAccount
-    && (profileTarget === 'existing' ? selectedChildProfile : shouldCreateProfileForParent && childProfileFormReady),
+    && (profileTarget === 'existing' ? selectedChildProfile && packageIntentReady : shouldCreateProfileForParent && childProfileFormReady && !duplicateProfileBlocking),
   )
   const migrationFormReady = Boolean(showMigrationForm && parentDataReady && childDataReady)
   const newAccountFormReady = Boolean(
@@ -402,9 +444,9 @@ function App() {
       if (wizardStep === 1) {
         if (lookupState === 'existing-old-account') return { label: 'Lanjut ke Mapping', disabled: false }
         if (isParentProfileLookup(lookupState)) return { label: 'Lanjut Pilih Profil', disabled: false }
-        if (lookupState === 'existing-child-profile-contact') return { label: selectedChildSearchProfile ? 'Review Tujuan Paket' : 'Pilih Profil Anak', disabled: !searchProfileReady }
-        if (lookupState === 'existing-child-profiles-same-parent' || lookupState === 'existing-child-profiles-cross-parent') return { label: selectedChildSearchProfile ? 'Review Tujuan Paket' : 'Pilih Profil Anak', disabled: !searchProfileReady }
-        if (lookupState === 'existing-multiple-matches') return { label: selectedChildSearchProfile ? 'Review Tujuan Paket' : 'Pilih Hasil Pencarian', disabled: !multipleMatchReady }
+        if (lookupState === 'existing-child-profile-contact') return { label: selectedChildSearchProfile ? (packageIntentReady ? 'Review Tujuan Paket' : 'Pilih Tujuan Transaksi') : 'Pilih Profil Anak', disabled: !searchProfileReady }
+        if (lookupState === 'existing-child-profiles-same-parent' || lookupState === 'existing-child-profiles-cross-parent') return { label: selectedChildSearchProfile ? (packageIntentReady ? 'Review Tujuan Paket' : 'Pilih Tujuan Transaksi') : 'Pilih Profil Anak', disabled: !searchProfileReady }
+        if (lookupState === 'existing-multiple-matches') return { label: selectedChildSearchProfile ? (packageIntentReady ? 'Review Tujuan Paket' : 'Pilih Tujuan Transaksi') : 'Pilih Hasil Pencarian', disabled: !multipleMatchReady }
         if (accountStatus === 'new' && lookupState === 'new-available') return { label: 'Lanjut Isi Data Orang Tua', disabled: false }
         if (lookupState === 'existing-not-registered' || lookupState === 'existing-child-phone' || lookupState === 'new-registered') {
           return { label: 'Ikuti Instruksi', disabled: true }
@@ -414,12 +456,12 @@ function App() {
       }
 
       if (wizardStep === 2 && parentLookupAccount) {
-        if (profileTarget === 'existing') return { label: 'Review Tujuan Paket', disabled: !selectedChildProfile }
+        if (profileTarget === 'existing') return { label: packageIntentReady ? 'Review Tujuan Paket' : 'Pilih Tujuan Transaksi', disabled: !selectedChildProfile || !packageIntentReady }
         return { label: 'Lanjut Isi Profil Anak', disabled: profileTarget !== 'new' }
       }
       if (wizardStep === 2) return { label: 'Lanjut Isi Data Orang Tua', disabled: contactOwner === null }
       if (wizardStep === 3) return { label: 'Lanjut Isi Profil Anak', disabled: !parentDataReady }
-      if (wizardStep === 4) return { label: parentLookupAccount ? 'Review Tujuan Paket' : 'Review Migrasi', disabled: parentLookupAccount ? !childProfileFormReady : !childDataReady }
+      if (wizardStep === 4) return { label: parentLookupAccount ? (duplicateProfileBlocking ? 'Cek Profil Mirip' : 'Review Tujuan Paket') : 'Review Migrasi', disabled: parentLookupAccount ? !childProfileFormReady || duplicateProfileBlocking : !childDataReady }
       return { label: 'Lanjut Pilih Metode Bayar', disabled: !consent }
     }
 
@@ -430,16 +472,16 @@ function App() {
     if (lookupState === 'idle') return { label: 'Cek Akun Dulu', disabled: true }
     if (lookupState === 'existing-not-registered' || lookupState === 'existing-child-phone') return { label: 'Ikuti Instruksi', disabled: true }
     if (lookupState === 'existing-child-profile-contact') {
-      return { label: searchProfileReady ? 'Review & Pilih Metode Bayar' : 'Pilih Profil Anak', disabled: !searchProfileReady }
+      return { label: selectedChildSearchProfile ? (packageIntentReady ? 'Review & Pilih Metode Bayar' : 'Pilih Tujuan Transaksi') : 'Pilih Profil Anak', disabled: !searchProfileReady }
     }
     if (lookupState === 'existing-child-profiles-same-parent' || lookupState === 'existing-child-profiles-cross-parent') {
-      return { label: searchProfileReady ? 'Review & Pilih Metode Bayar' : 'Pilih Profil Anak', disabled: !searchProfileReady }
+      return { label: selectedChildSearchProfile ? (packageIntentReady ? 'Review & Pilih Metode Bayar' : 'Pilih Tujuan Transaksi') : 'Pilih Profil Anak', disabled: !searchProfileReady }
     }
     if (lookupState === 'existing-multiple-matches') {
-      return { label: multipleMatchReady ? 'Review & Pilih Metode Bayar' : 'Pilih Hasil Pencarian', disabled: !multipleMatchReady }
+      return { label: selectedChildSearchProfile ? (packageIntentReady ? 'Review & Pilih Metode Bayar' : 'Pilih Tujuan Transaksi') : 'Pilih Hasil Pencarian', disabled: !multipleMatchReady }
     }
     if (parentLookupAccount) {
-      return { label: parentProfileTargetReady ? 'Review & Pilih Metode Bayar' : 'Tentukan Profil Tujuan', disabled: !parentProfileTargetReady }
+      return { label: parentProfileTargetReady ? 'Review & Pilih Metode Bayar' : duplicateProfileBlocking ? 'Cek Profil Mirip' : selectedChildProfile && !packageIntentReady ? 'Pilih Tujuan Transaksi' : 'Tentukan Profil Tujuan', disabled: !parentProfileTargetReady }
     }
     if (lookupState === 'existing-old-account') {
       if (usesMappingDecision && contactOwner === null) {
@@ -449,7 +491,7 @@ function App() {
       return { label: migrationFormReady ? 'Review & Pilih Metode Bayar' : 'Lengkapi Data Migrasi', disabled: !migrationFormReady }
     }
     return { label: 'Pilih Status Akun', disabled: true }
-  }, [accountStatus, childDataReady, childProfileFormReady, consent, contactOwner, isOptionThree, lookupState, migrationFormReady, multipleMatchReady, newAccountFormReady, parentDataReady, parentLookupAccount, parentProfileTargetReady, profileTarget, searchProfileReady, selectedChildProfile, selectedChildSearchProfile, usesMappingDecision, wizardStep])
+  }, [accountStatus, childDataReady, childProfileFormReady, consent, contactOwner, duplicateProfileBlocking, isOptionThree, lookupState, migrationFormReady, multipleMatchReady, newAccountFormReady, packageIntentReady, parentDataReady, parentLookupAccount, parentProfileTargetReady, profileTarget, searchProfileReady, selectedChildProfile, selectedChildSearchProfile, usesMappingDecision, wizardStep])
 
   const handleAccountStatusChange = (value: AccountStatus | null) => {
     setAccountStatus(value)
@@ -468,6 +510,8 @@ function App() {
     setGrade('')
     setWizardStep(1)
     setConsent(false)
+    setPackageIntent(null)
+    setDuplicateProfileAcknowledged(false)
   }
 
   const resetFlowState = () => {
@@ -489,6 +533,30 @@ function App() {
     setReviewOpen(false)
     setDoneOpen(false)
     setConsent(false)
+    setPackageIntent(null)
+    setDuplicateProfileAcknowledged(false)
+  }
+
+  const handleChildNameChange = (value: string) => {
+    setChildName(value)
+    setDuplicateProfileAcknowledged(false)
+  }
+
+  const handleProfileTargetChange = (value: ProfileTarget) => {
+    setProfileTarget(value)
+    setPackageIntent(null)
+    if (value !== 'new') setDuplicateProfileAcknowledged(false)
+  }
+
+  const handleSelectedChildProfileIdChange = (value: string) => {
+    setSelectedChildProfileId(value)
+    setPackageIntent(null)
+    setDuplicateProfileAcknowledged(false)
+  }
+
+  const handleSelectedChildSearchProfileIdChange = (value: string) => {
+    setSelectedChildSearchProfileId(value)
+    setPackageIntent(null)
   }
 
   const handlePrototypeOptionChange = (option: PrototypeOptionId) => {
@@ -508,6 +576,8 @@ function App() {
     setSelectedChildProfileId('')
     setSelectedChildSearchProfileId('')
     setConsent(false)
+    setPackageIntent(null)
+    setDuplicateProfileAcknowledged(false)
 
     if (!phone.trim()) {
       setLookupState('idle')
@@ -636,9 +706,12 @@ function App() {
               contactOwner={contactOwner}
               checkNumber={checkNumber}
               grade={grade}
+              duplicateProfileAcknowledged={duplicateProfileAcknowledged}
+              duplicateProfileMatches={duplicateProfileMatches}
               isBeforeAfterMapping={isOptionThree}
               isExplicitMapping={isOptionTwo}
               lookupState={lookupState}
+              packageIntent={packageIntent}
               setWizardStep={setWizardStep}
               childEmail={childEmail}
               childPhone={childPhone}
@@ -652,16 +725,18 @@ function App() {
               setAccountStatus={handleAccountStatusChange}
               setChildEmail={setChildEmail}
               setConsent={setConsent}
-              setChildName={setChildName}
+              setChildName={handleChildNameChange}
               setChildPhone={setChildPhone}
               setContactOwner={setContactOwner}
               setGrade={setGrade}
               setParentName={setParentName}
               setParentPhone={setParentPhone}
               setPhone={setPhone}
-              setProfileTarget={setProfileTarget}
-              setSelectedChildProfileId={setSelectedChildProfileId}
-              setSelectedChildSearchProfileId={setSelectedChildSearchProfileId}
+              setProfileTarget={handleProfileTargetChange}
+              setSelectedChildProfileId={handleSelectedChildProfileIdChange}
+              setSelectedChildSearchProfileId={handleSelectedChildSearchProfileIdChange}
+              setDuplicateProfileAcknowledged={setDuplicateProfileAcknowledged}
+              setPackageIntent={setPackageIntent}
               setUsesParentIdentity={setUsesParentIdentity}
               showMigrationForm={showMigrationForm}
               showNewAccountForm={showNewAccountForm}
@@ -688,6 +763,7 @@ function App() {
             accountStatus={accountStatus}
             consent={consent}
             lookupState={lookupState}
+            packageIntent={packageIntent}
             phone={phone}
             childName={childName}
             grade={grade}
@@ -857,12 +933,15 @@ function PurchasePurposeCard({
   childPhone,
   consent,
   contactOwner,
+  duplicateProfileAcknowledged,
+  duplicateProfileMatches,
   grade,
   isBeforeAfterMapping,
   isExplicitMapping,
   lookupState,
   parentName,
   parentPhone,
+  packageIntent,
   phone,
   profileTarget,
   selectedChildProfileId,
@@ -873,11 +952,13 @@ function PurchasePurposeCard({
   setChildPhone,
   setConsent,
   setContactOwner,
+  setDuplicateProfileAcknowledged,
   setGrade,
   setLookupState,
   setParentName,
   setParentPhone,
   setPhone,
+  setPackageIntent,
   setProfileTarget,
   setSelectedChildProfileId,
   setSelectedChildSearchProfileId,
@@ -902,7 +983,10 @@ function PurchasePurposeCard({
           consent={consent}
           contactOwner={contactOwner}
           grade={grade}
+          duplicateProfileAcknowledged={duplicateProfileAcknowledged}
+          duplicateProfileMatches={duplicateProfileMatches}
           lookupState={lookupState}
+          packageIntent={packageIntent}
           parentName={parentName}
           parentPhone={parentPhone}
           phone={phone}
@@ -915,11 +999,13 @@ function PurchasePurposeCard({
           setChildPhone={setChildPhone}
           setConsent={setConsent}
           setContactOwner={setContactOwner}
+          setDuplicateProfileAcknowledged={setDuplicateProfileAcknowledged}
           setGrade={setGrade}
           setLookupState={setLookupState}
           setParentName={setParentName}
           setParentPhone={setParentPhone}
           setPhone={setPhone}
+          setPackageIntent={setPackageIntent}
           setProfileTarget={setProfileTarget}
           setSelectedChildProfileId={setSelectedChildProfileId}
           setSelectedChildSearchProfileId={setSelectedChildSearchProfileId}
@@ -962,9 +1048,11 @@ function PurchasePurposeCard({
         setContactOwner={setContactOwner}
         setLookupState={setLookupState}
         setPhone={setPhone}
+        packageIntent={packageIntent}
         setProfileTarget={setProfileTarget}
         setSelectedChildProfileId={setSelectedChildProfileId}
         setSelectedChildSearchProfileId={setSelectedChildSearchProfileId}
+        setPackageIntent={setPackageIntent}
         setUsesParentIdentity={setUsesParentIdentity}
         usesParentIdentity={usesParentIdentity}
       />
@@ -978,11 +1066,16 @@ function PurchasePurposeCard({
             childPhone={childPhone}
             grade={grade}
             profileTarget={profileTarget}
+            packageIntent={packageIntent}
             selectedChildProfileId={selectedChildProfileId}
+            duplicateProfileAcknowledged={duplicateProfileAcknowledged}
+            duplicateProfileMatches={duplicateProfileMatches}
             setChildEmail={setChildEmail}
             setChildName={setChildName}
             setChildPhone={setChildPhone}
             setGrade={setGrade}
+            setDuplicateProfileAcknowledged={setDuplicateProfileAcknowledged}
+            setPackageIntent={setPackageIntent}
             setProfileTarget={setProfileTarget}
             setSelectedChildProfileId={setSelectedChildProfileId}
           />
@@ -1016,7 +1109,7 @@ function PurchasePurposeCard({
               grade={grade}
               mode="migration"
               parentName={parentName}
-              parentPhone={usesParentIdentity ? parentPhone || phone : parentPhone}
+              parentPhone={usesParentIdentity ? phone : parentPhone}
               usesParentIdentity={usesParentIdentity}
               setChildEmail={setChildEmail}
               setChildName={setChildName}
@@ -1061,8 +1154,11 @@ function OptionThreeWizard({
   childPhone,
   consent,
   contactOwner,
+  duplicateProfileAcknowledged,
+  duplicateProfileMatches,
   grade,
   lookupState,
+  packageIntent,
   parentName,
   parentPhone,
   phone,
@@ -1075,11 +1171,13 @@ function OptionThreeWizard({
   setChildPhone,
   setConsent,
   setContactOwner,
+  setDuplicateProfileAcknowledged,
   setGrade,
   setLookupState,
   setParentName,
   setParentPhone,
   setPhone,
+  setPackageIntent,
   setProfileTarget,
   setSelectedChildProfileId,
   setSelectedChildSearchProfileId,
@@ -1102,11 +1200,13 @@ function OptionThreeWizard({
           accountStatus={accountStatus}
           checkNumber={checkNumber}
           lookupState={lookupState}
+          packageIntent={packageIntent}
           phone={phone}
           selectedChildSearchProfileId={selectedChildSearchProfileId}
           setAccountStatus={setAccountStatus}
           setLookupState={setLookupState}
           setPhone={setPhone}
+          setPackageIntent={setPackageIntent}
           setProfileTarget={setProfileTarget}
           setSelectedChildProfileId={setSelectedChildProfileId}
           setSelectedChildSearchProfileId={setSelectedChildSearchProfileId}
@@ -1122,12 +1222,17 @@ function OptionThreeWizard({
               childName={childName}
               childPhone={childPhone}
               grade={grade}
+              duplicateProfileAcknowledged={duplicateProfileAcknowledged}
+              duplicateProfileMatches={duplicateProfileMatches}
+              packageIntent={packageIntent}
               profileTarget={profileTarget}
               selectedChildProfileId={selectedChildProfileId}
               setChildEmail={setChildEmail}
               setChildName={setChildName}
               setChildPhone={setChildPhone}
               setGrade={setGrade}
+              setDuplicateProfileAcknowledged={setDuplicateProfileAcknowledged}
+              setPackageIntent={setPackageIntent}
               setProfileTarget={setProfileTarget}
               setSelectedChildProfileId={setSelectedChildProfileId}
             />
@@ -1142,7 +1247,7 @@ function OptionThreeWizard({
           <ParentDataStep
             mode={isNewAccount ? 'new' : 'migration'}
             parentName={parentName}
-            parentPhone={usesParentIdentity ? parentPhone || phone : parentPhone}
+            parentPhone={usesParentIdentity ? phone : parentPhone}
             setParentName={setParentName}
             setParentPhone={setParentPhone}
             usesParentIdentity={usesParentIdentity}
@@ -1153,16 +1258,30 @@ function OptionThreeWizard({
       {wizardStep === 4 && (
         <StagePanel className="form-stage" step="STEP 4" title={parentLookupAccount ? 'Buat Profil Anak Baru' : 'Lengkapi Profil Anak'}>
           {parentLookupAccount ? (
-            <NewChildProfileForm
-              childEmail={childEmail}
-              childName={childName}
-              childPhone={childPhone}
-              grade={grade}
-              setChildEmail={setChildEmail}
-              setChildName={setChildName}
-              setChildPhone={setChildPhone}
-              setGrade={setGrade}
-            />
+            <>
+              <NewChildProfileForm
+                childEmail={childEmail}
+                childName={childName}
+                childPhone={childPhone}
+                grade={grade}
+                setChildEmail={setChildEmail}
+                setChildName={setChildName}
+                setChildPhone={setChildPhone}
+                setGrade={setGrade}
+              />
+              <DuplicateProfileWarning
+                acknowledged={duplicateProfileAcknowledged}
+                matches={duplicateProfileMatches}
+                onAcknowledge={() => setDuplicateProfileAcknowledged(true)}
+                onUseProfile={(profile) => {
+                  setProfileTarget('existing')
+                  setSelectedChildProfileId(profile.id)
+                  setPackageIntent(null)
+                  setDuplicateProfileAcknowledged(false)
+                  setWizardStep(2)
+                }}
+              />
+            </>
           ) : (
             <ChildProfileStep
               childEmail={childEmail || (usesParentIdentity || isNewAccount ? '' : existingAccount.email)}
@@ -1189,7 +1308,8 @@ function OptionThreeWizard({
             grade={grade}
             parentAccount={parentLookupAccount}
             parentName={parentName}
-            parentPhone={parentLookupAccount?.phone ?? (usesParentIdentity ? parentPhone || phone : parentPhone)}
+            parentPhone={parentLookupAccount?.phone ?? (usesParentIdentity ? phone : parentPhone)}
+            packageIntent={packageIntent}
             phone={phone}
             profileTarget={profileTarget}
             selectedChildProfileId={selectedChildProfileId}
@@ -1210,10 +1330,13 @@ type PurchasePurposeCardProps = {
   childName: string
   childPhone: string
   consent: boolean
+  duplicateProfileAcknowledged: boolean
+  duplicateProfileMatches: ChildProfile[]
   grade: string
   lookupState: LookupState
   parentName: string
   parentPhone: string
+  packageIntent: PackageIntent
   phone: string
   profileTarget: ProfileTarget
   selectedChildProfileId: string
@@ -1223,10 +1346,12 @@ type PurchasePurposeCardProps = {
   setChildName: (value: string) => void
   setChildPhone: (value: string) => void
   setConsent: (value: boolean) => void
+  setDuplicateProfileAcknowledged: (value: boolean) => void
   setGrade: (value: string) => void
   setParentName: (value: string) => void
   setParentPhone: (value: string) => void
   setPhone: (value: string) => void
+  setPackageIntent: (value: PackageIntent) => void
   setProfileTarget: (value: ProfileTarget) => void
   setSelectedChildProfileId: (value: string) => void
   setSelectedChildSearchProfileId: (value: string) => void
@@ -1277,15 +1402,17 @@ function WizardBackButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-function WizardLookupStep({ accountStatus, checkNumber, lookupState, phone, selectedChildSearchProfileId, setAccountStatus, setLookupState, setPhone, setProfileTarget, setSelectedChildProfileId, setSelectedChildSearchProfileId }: {
+function WizardLookupStep({ accountStatus, checkNumber, lookupState, packageIntent, phone, selectedChildSearchProfileId, setAccountStatus, setLookupState, setPhone, setPackageIntent, setProfileTarget, setSelectedChildProfileId, setSelectedChildSearchProfileId }: {
   accountStatus: AccountStatus | null
   checkNumber: () => void
   lookupState: LookupState
+  packageIntent: PackageIntent
   phone: string
   selectedChildSearchProfileId: string
   setAccountStatus: (value: AccountStatus | null) => void
   setLookupState: (value: LookupState) => void
   setPhone: (value: string) => void
+  setPackageIntent: (value: PackageIntent) => void
   setProfileTarget: (value: ProfileTarget) => void
   setSelectedChildProfileId: (value: string) => void
   setSelectedChildSearchProfileId: (value: string) => void
@@ -1337,11 +1464,13 @@ function WizardLookupStep({ accountStatus, checkNumber, lookupState, phone, sele
           {isSearchResolutionLookup(lookupState) && (
             <SearchResolutionResults
               lookupState={lookupState}
+              packageIntent={packageIntent}
               selectedChildSearchProfileId={selectedChildSearchProfileId}
               setLookupState={setLookupState}
               setProfileTarget={setProfileTarget}
               setSelectedChildProfileId={setSelectedChildProfileId}
               setSelectedChildSearchProfileId={setSelectedChildSearchProfileId}
+              setPackageIntent={setPackageIntent}
             />
           )}
           {lookupState === 'existing-not-registered' && <ExistingNotRegistered setAccountStatus={setAccountStatus} />}
@@ -1365,8 +1494,8 @@ function ParentDataStep({ mode, parentName, parentPhone, setParentName, setParen
   const shouldCheckParentPhone = mode === 'migration' && !usesParentIdentity
   const parentPhoneAccount = shouldCheckParentPhone ? getRegisteredParentAccount(parentPhone) : null
   const parentPhoneIsCheckable = shouldCheckParentPhone && canCheckParentPhone(parentPhone)
-  const shouldPrefillParentName = Boolean(parentPhoneAccount && !parentName)
-  const parentNameValue = shouldPrefillParentName ? parentPhoneAccount?.name ?? '' : parentName
+  const shouldLockParentName = Boolean(parentPhoneAccount)
+  const parentNameValue = parentPhoneAccount?.name ?? parentName
 
   return (
     <div className="form-fields compact-form">
@@ -1374,6 +1503,7 @@ function ParentDataStep({ mode, parentName, parentPhone, setParentName, setParen
         helper={usesParentIdentity ? 'Otomatis terisi dari No. HP akun lama yang hanya melekat ke satu akun.' : undefined}
         label="No. HP Orang Tua"
         placeholder="Masukan no. HP orang tua"
+        readOnly={usesParentIdentity}
         value={parentPhone}
         onChange={setParentPhone}
       />
@@ -1381,10 +1511,10 @@ function ParentDataStep({ mode, parentName, parentPhone, setParentName, setParen
         <ParentPhoneCheckResult account={parentPhoneAccount} phone={parentPhone} />
       )}
       <TextField
-        helper={shouldPrefillParentName ? 'Otomatis terisi dari akun yang ditemukan melalui No. HP Orang Tua.' : undefined}
+        helper={shouldLockParentName ? 'Dikunci dari akun yang ditemukan melalui No. HP Orang Tua.' : undefined}
         label="Nama Orang Tua"
         placeholder="Masukan nama lengkap orang tua"
-        readOnly={shouldPrefillParentName}
+        readOnly={shouldLockParentName}
         value={parentNameValue}
         onChange={setParentName}
       />
@@ -1473,7 +1603,7 @@ function NewChildProfileForm({ childEmail, childName, childPhone, grade, setChil
   )
 }
 
-function WizardReviewStep({ accountStatus, childName, consent, grade, parentAccount, parentName, parentPhone, phone, profileTarget, selectedChildProfileId, selectedChildSearchProfileId, setConsent, usesParentIdentity }: {
+function WizardReviewStep({ accountStatus, childName, consent, grade, parentAccount, parentName, parentPhone, packageIntent, phone, profileTarget, selectedChildProfileId, selectedChildSearchProfileId, setConsent, usesParentIdentity }: {
   accountStatus: AccountStatus | null
   childName: string
   consent: boolean
@@ -1481,6 +1611,7 @@ function WizardReviewStep({ accountStatus, childName, consent, grade, parentAcco
   parentAccount: ParentProfileAccount | null
   parentName: string
   parentPhone: string
+  packageIntent: PackageIntent
   phone: string
   profileTarget: ProfileTarget
   selectedChildProfileId: string
@@ -1506,6 +1637,7 @@ function WizardReviewStep({ accountStatus, childName, consent, grade, parentAcco
       : existingAccount.name
   const targetGrade = selectedSearchProfile?.grade ?? (parentAccount && profileTarget === 'existing' && selectedProfile ? selectedProfile.grade : grade || '-')
   const usesExistingProfile = Boolean(selectedSearchProfile || (parentAccount && profileTarget === 'existing' && selectedProfile))
+  const activePackageProfile = selectedSearchProfile?.hasActivePackage || selectedProfile?.hasActivePackage
   const reviewType = selectedSearchProfile || parentAccount ? 'Aktivasi paket' : isNewAccount ? 'Pembuatan akun' : 'Konversi akun'
   const reviewNote = selectedSearchProfile
     ? 'Paket akan aktif di Profil Anak yang ditemukan. Akses profil tidak berubah.'
@@ -1518,7 +1650,7 @@ function WizardReviewStep({ accountStatus, childName, consent, grade, parentAcco
       : 'Akun aktif akan disesuaikan ke struktur baru.'
   const accessValue = usesExistingProfile ? 'Tidak berubah' : 'Username + PIN'
   const accessCopy = usesExistingProfile ? 'Gunakan akses profil yang sudah ada.' : parentAccount || isNewAccount ? 'Username dan PIN dikirim ke WhatsApp Orang Tua.' : 'Login anak berubah ke Username dan PIN.'
-  const consentCopy = usesExistingProfile ? 'Tujuan paket sudah dikonfirmasi ke customer.' : 'Perubahan akses login dan pemrosesan data sudah dijelaskan ke customer.'
+  const consentCopy = usesExistingProfile ? 'Profil Anak dan Akun Orang Tua tujuan paket sudah dikonfirmasi ke customer.' : 'Perubahan akses login dan pemrosesan data sudah dijelaskan ke customer.'
 
   return (
     <div className="wizard-review scan-review">
@@ -1531,13 +1663,14 @@ function WizardReviewStep({ accountStatus, childName, consent, grade, parentAcco
       <div className="review-facts" aria-label="Detail review">
         <ReviewFact label="Akun Orang Tua" value={parentDisplayName} meta={parentDisplayPhone} />
         <ReviewFact label="Profil Tujuan" value={targetProfileName} meta={targetGrade} />
+        {activePackageProfile && <ReviewFact label="Tujuan Transaksi" value={getPackageIntentLabel(packageIntent)} meta="Dipilih agent sebelum review" />}
         <ReviewFact label="Akses Anak" value={accessValue} meta={accessCopy} />
       </div>
 
       <section className="review-checklist" aria-label="Yang perlu dipastikan">
         <h4>Pastikan sebelum lanjut</h4>
         <ReviewCheckItem>Profil tujuan paket sudah sesuai dengan customer.</ReviewCheckItem>
-        {(selectedSearchProfile?.hasActivePackage || selectedProfile?.hasActivePackage) && <ReviewCheckItem warning>Profil ini sudah punya paket aktif. Konfirmasi renewal atau upgrade.</ReviewCheckItem>}
+        {activePackageProfile && <ReviewCheckItem warning>Profil ini sudah punya paket aktif. Tujuan transaksi: {getPackageIntentLabel(packageIntent)}.</ReviewCheckItem>}
         {usesExistingProfile ? <ReviewCheckItem>Akses profil anak tetap mengikuti pengaturan yang sudah ada.</ReviewCheckItem> : <ReviewCheckItem>No. HP/email anak hanya tersimpan sebagai data profil.</ReviewCheckItem>}
       </section>
 
@@ -1608,15 +1741,18 @@ function ParentAccountResult({ account }: { account: ParentProfileAccount }) {
 }
 
 
-function SearchResolutionResults({ lookupState, selectedChildSearchProfileId, setLookupState, setProfileTarget, setSelectedChildProfileId, setSelectedChildSearchProfileId }: {
+function SearchResolutionResults({ lookupState, packageIntent, selectedChildSearchProfileId, setLookupState, setPackageIntent, setProfileTarget, setSelectedChildProfileId, setSelectedChildSearchProfileId }: {
   lookupState: LookupState
+  packageIntent: PackageIntent
   selectedChildSearchProfileId: string
   setLookupState: (value: LookupState) => void
+  setPackageIntent: (value: PackageIntent) => void
   setProfileTarget: (value: ProfileTarget) => void
   setSelectedChildProfileId: (value: string) => void
   setSelectedChildSearchProfileId: (value: string) => void
 }) {
   const profileResults = getChildProfileSearchResults(lookupState)
+  const selectedProfile = profileResults.find((profile) => profile.id === selectedChildSearchProfileId)
   const parentCount = getChildProfileParentCount(profileResults)
   const hasParentAccountResult = lookupState === 'existing-multiple-matches'
   const hasMultipleProfiles = profileResults.length > 1
@@ -1670,12 +1806,14 @@ function SearchResolutionResults({ lookupState, selectedChildSearchProfileId, se
     setProfileTarget(null)
     setSelectedChildProfileId('')
     setSelectedChildSearchProfileId('')
+    setPackageIntent(null)
   }
 
   const selectChildProfile = (profile: ChildProfile) => {
     setProfileTarget('existing')
     setSelectedChildProfileId('')
     setSelectedChildSearchProfileId(profile.id)
+    setPackageIntent(null)
   }
 
   const renderProfileCard = (profile: ChildProfile, hideParentDetail = false) => (
@@ -1767,6 +1905,19 @@ function SearchResolutionResults({ lookupState, selectedChildSearchProfileId, se
         </div>
       </div>
 
+      {selectedProfile && (
+        <SelectedTargetSummary
+          packageIntent={packageIntent}
+          parentName={selectedProfile.parentName ?? 'Orang Tua'}
+          parentPhone={selectedProfile.parentPhone ?? '-'}
+          profile={selectedProfile}
+        />
+      )}
+
+      {selectedProfile?.hasActivePackage && (
+        <PackageIntentChoice value={packageIntent} onChange={setPackageIntent} />
+      )}
+
       <Callout>
         <strong>Arahan untuk Agent</strong>
         <PointList items={lookupState === 'existing-child-profiles-cross-parent' ? [
@@ -1786,18 +1937,23 @@ function SearchResolutionResults({ lookupState, selectedChildSearchProfileId, se
     </div>
   )
 }
-function ProfileTargetStage({ account, childEmail, childName, childPhone, grade, profileTarget, selectedChildProfileId, setChildEmail, setChildName, setChildPhone, setGrade, setProfileTarget, setSelectedChildProfileId }: {
+function ProfileTargetStage({ account, childEmail, childName, childPhone, duplicateProfileAcknowledged, duplicateProfileMatches, grade, packageIntent, profileTarget, selectedChildProfileId, setChildEmail, setChildName, setChildPhone, setDuplicateProfileAcknowledged, setGrade, setPackageIntent, setProfileTarget, setSelectedChildProfileId }: {
   account: ParentProfileAccount
   childEmail: string
   childName: string
   childPhone: string
+  duplicateProfileAcknowledged: boolean
+  duplicateProfileMatches: ChildProfile[]
   grade: string
+  packageIntent: PackageIntent
   profileTarget: ProfileTarget
   selectedChildProfileId: string
   setChildEmail: (value: string) => void
   setChildName: (value: string) => void
   setChildPhone: (value: string) => void
+  setDuplicateProfileAcknowledged: (value: boolean) => void
   setGrade: (value: string) => void
+  setPackageIntent: (value: PackageIntent) => void
   setProfileTarget: (value: ProfileTarget) => void
   setSelectedChildProfileId: (value: string) => void
 }) {
@@ -1807,11 +1963,15 @@ function ProfileTargetStage({ account, childEmail, childName, childPhone, grade,
   const selectExistingProfile = (profile: ChildProfile) => {
     setProfileTarget('existing')
     setSelectedChildProfileId(profile.id)
+    setPackageIntent(null)
+    setDuplicateProfileAcknowledged(false)
   }
 
   const selectNewProfile = () => {
     setProfileTarget('new')
     setSelectedChildProfileId('')
+    setPackageIntent(null)
+    setDuplicateProfileAcknowledged(false)
   }
 
   return (
@@ -1860,6 +2020,19 @@ function ProfileTargetStage({ account, childEmail, childName, childPhone, grade,
         </Callout>
       )}
 
+      {profileTarget === 'existing' && selectedProfile && (
+        <SelectedTargetSummary
+          packageIntent={packageIntent}
+          parentName={account.name}
+          parentPhone={account.phone}
+          profile={selectedProfile}
+        />
+      )}
+
+      {selectedProfile?.hasActivePackage && (
+        <PackageIntentChoice value={packageIntent} onChange={setPackageIntent} />
+      )}
+
       {profileTarget === 'new' && (
         <div className="new-profile-inline">
           <h4>Data Profil Anak Baru</h4>
@@ -1872,6 +2045,12 @@ function ProfileTargetStage({ account, childEmail, childName, childPhone, grade,
             setChildName={setChildName}
             setChildPhone={setChildPhone}
             setGrade={setGrade}
+          />
+          <DuplicateProfileWarning
+            acknowledged={duplicateProfileAcknowledged}
+            matches={duplicateProfileMatches}
+            onAcknowledge={() => setDuplicateProfileAcknowledged(true)}
+            onUseProfile={selectExistingProfile}
           />
         </div>
       )}
@@ -1893,6 +2072,89 @@ function ProfileTargetRow({ active, onClick, profile }: { active: boolean; onCli
   )
 }
 
+function SelectedTargetSummary({ packageIntent, parentName, parentPhone, profile }: { packageIntent: PackageIntent; parentName: string; parentPhone: string; profile: ChildProfile }) {
+  return (
+    <div className="selected-target-summary" aria-label="Profil tujuan paket terpilih">
+      <span className="summary-kicker">Tujuan paket terpilih</span>
+      <div className="summary-grid">
+        <div>
+          <span>Profil Anak</span>
+          <strong>{profile.name}</strong>
+          <small>{profile.grade}</small>
+        </div>
+        <div>
+          <span>Akun Orang Tua</span>
+          <strong>{parentName}</strong>
+          <small>{parentPhone}</small>
+        </div>
+      </div>
+      {profile.hasActivePackage && (
+        <div className={packageIntent ? 'intent-status ready' : 'intent-status'}>
+          <span>{packageIntent ? 'Tujuan transaksi' : 'Perlu dipilih'}</span>
+          <strong>{packageIntent ? getPackageIntentLabel(packageIntent) : 'Renewal / Upgrade / Paket tambahan'}</strong>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PackageIntentChoice({ onChange, value }: { onChange: (value: PackageIntent) => void; value: PackageIntent }) {
+  const options: Exclude<PackageIntent, null>[] = ['renewal', 'upgrade', 'additional']
+
+  return (
+    <div className="intent-choice" role="radiogroup" aria-label="Tujuan transaksi paket aktif">
+      <div className="intent-choice-head">
+        <strong>Pilih tujuan transaksi</strong>
+        <p>Wajib dipilih karena profil ini masih punya paket aktif.</p>
+      </div>
+      <div className="intent-options">
+        {options.map((option) => (
+          <button
+            className={value === option ? 'intent-option active' : 'intent-option'}
+            key={option}
+            type="button"
+            aria-pressed={value === option}
+            onClick={() => onChange(option)}
+          >
+            <span>{packageIntentLabels[option]}</span>
+            <small>{packageIntentDescriptions[option]}</small>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function DuplicateProfileWarning({ acknowledged, matches, onAcknowledge, onUseProfile }: {
+  acknowledged: boolean
+  matches: ChildProfile[]
+  onAcknowledge: () => void
+  onUseProfile: (profile: ChildProfile) => void
+}) {
+  if (matches.length === 0) return null
+
+  return (
+    <Callout className="duplicate-profile-warning" variant="warning">
+      <strong>Profil mirip sudah ada</strong>
+      <PointList items={[
+        'Cek lagi apakah paket seharusnya diarahkan ke profil yang sudah ada.',
+        acknowledged ? 'Agent memilih tetap membuat Profil Anak baru.' : 'Pilih profil yang benar atau konfirmasi tetap buat profil baru.',
+      ]} />
+      <div className="duplicate-profile-list">
+        {matches.map((profile) => (
+          <button key={profile.id} type="button" onClick={() => onUseProfile(profile)}>
+            <span>{profile.name}</span>
+            <small>{profile.grade}{profile.hasActivePackage ? ' · Paket aktif' : ''}</small>
+          </button>
+        ))}
+      </div>
+      {!acknowledged && (
+        <button className="inline-action duplicate-ack" type="button" onClick={onAcknowledge}>Tetap Buat Profil Baru</button>
+      )}
+    </Callout>
+  )
+}
+
 function LookupStage({
   accountStatus,
   checkNumber,
@@ -1900,12 +2162,14 @@ function LookupStage({
   isBeforeAfterMapping,
   isExplicitMapping,
   lookupState,
+  packageIntent,
   phone,
   setAccountStatus,
   setContactOwner,
   selectedChildSearchProfileId,
   setLookupState,
   setPhone,
+  setPackageIntent,
   setProfileTarget,
   setSelectedChildProfileId,
   setSelectedChildSearchProfileId,
@@ -1918,12 +2182,14 @@ function LookupStage({
   isBeforeAfterMapping: boolean
   isExplicitMapping: boolean
   lookupState: LookupState
+  packageIntent: PackageIntent
   phone: string
   selectedChildSearchProfileId: string
   setAccountStatus: (value: AccountStatus | null) => void
   setContactOwner: (value: ContactOwner) => void
   setLookupState: (value: LookupState) => void
   setPhone: (value: string) => void
+  setPackageIntent: (value: PackageIntent) => void
   setProfileTarget: (value: ProfileTarget) => void
   setSelectedChildProfileId: (value: string) => void
   setSelectedChildSearchProfileId: (value: string) => void
@@ -1976,11 +2242,13 @@ function LookupStage({
       {isSearchResolutionLookup(lookupState) && (
         <SearchResolutionResults
           lookupState={lookupState}
+          packageIntent={packageIntent}
           selectedChildSearchProfileId={selectedChildSearchProfileId}
           setLookupState={setLookupState}
           setProfileTarget={setProfileTarget}
           setSelectedChildProfileId={setSelectedChildProfileId}
           setSelectedChildSearchProfileId={setSelectedChildSearchProfileId}
+          setPackageIntent={setPackageIntent}
         />
       )}
       {lookupState === 'existing-not-registered' && <ExistingNotRegistered setAccountStatus={setAccountStatus} />}
@@ -2311,8 +2579,8 @@ function AccountForm({
   const shouldCheckParentPhone = isMigration && !usesParentIdentity
   const parentPhoneAccount = shouldCheckParentPhone ? getRegisteredParentAccount(parentPhone) : null
   const parentPhoneIsCheckable = shouldCheckParentPhone && canCheckParentPhone(parentPhone)
-  const shouldPrefillParentName = Boolean(parentPhoneAccount && !parentName)
-  const parentNameValue = shouldPrefillParentName ? parentPhoneAccount?.name ?? '' : parentName
+  const shouldLockParentName = Boolean(parentPhoneAccount)
+  const parentNameValue = parentPhoneAccount?.name ?? parentName
 
   return (
     <div className="form-fields">
@@ -2321,6 +2589,7 @@ function AccountForm({
         helper={usesParentIdentity ? 'Otomatis terisi dari No. HP akun lama yang hanya melekat ke satu akun.' : undefined}
         label="No. HP Orang Tua"
         placeholder="Masukan no. HP orang tua"
+        readOnly={usesParentIdentity}
         value={parentPhone}
         onChange={setParentPhone}
       />
@@ -2328,10 +2597,10 @@ function AccountForm({
         <ParentPhoneCheckResult account={parentPhoneAccount} phone={parentPhone} />
       )}
       <TextField
-        helper={shouldPrefillParentName ? 'Otomatis terisi dari akun yang ditemukan melalui No. HP Orang Tua.' : undefined}
+        helper={shouldLockParentName ? 'Dikunci dari akun yang ditemukan melalui No. HP Orang Tua.' : undefined}
         label="Nama Orang Tua"
         placeholder="Masukan nama lengkap orang tua"
-        readOnly={shouldPrefillParentName}
+        readOnly={shouldLockParentName}
         value={parentNameValue}
         onChange={setParentName}
       />
@@ -2417,9 +2686,12 @@ function TextField({ helper, label, onChange, placeholder, readOnly = false, val
   value: string
 }) {
   return (
-    <label>
-      {label}
-      <input placeholder={placeholder} readOnly={readOnly} value={value} onChange={(event) => onChange?.(event.target.value)} />
+    <label className={readOnly ? 'locked-field' : undefined}>
+      <span className="field-label-row">
+        <span>{label}</span>
+        {readOnly && <span className="locked-chip"><Lock size={11} /> Dikunci</span>}
+      </span>
+      <input aria-readonly={readOnly} placeholder={placeholder} readOnly={readOnly} value={value} onChange={(event) => onChange?.(event.target.value)} />
       {helper && <small>{helper}</small>}
     </label>
   )
@@ -2499,7 +2771,7 @@ function BottomCta({ contextLabel = 'Total Harga', contextValue = 'Rp880.000', d
   )
 }
 
-function ReviewSheet({ accountStatus, childName, consent, grade, lookupState, parentName, parentPhone, phone, profileTarget, selectedChildProfileId, selectedChildSearchProfileId, setConsent, usesParentIdentity, onClose, onContinue }: {
+function ReviewSheet({ accountStatus, childName, consent, grade, lookupState, parentName, parentPhone, packageIntent, phone, profileTarget, selectedChildProfileId, selectedChildSearchProfileId, setConsent, usesParentIdentity, onClose, onContinue }: {
   accountStatus: AccountStatus | null
   childName: string
   consent: boolean
@@ -2507,6 +2779,7 @@ function ReviewSheet({ accountStatus, childName, consent, grade, lookupState, pa
   lookupState: LookupState
   parentName: string
   parentPhone: string
+  packageIntent: PackageIntent
   phone: string
   profileTarget: ProfileTarget
   selectedChildProfileId: string
@@ -2535,6 +2808,7 @@ function ReviewSheet({ accountStatus, childName, consent, grade, lookupState, pa
       : existingAccount.name
   const targetGrade = selectedSearchProfile?.grade ?? (parentAccount && profileTarget === 'existing' && selectedProfile ? selectedProfile.grade : grade || '-')
   const usesExistingProfile = Boolean(selectedSearchProfile || (parentAccount && profileTarget === 'existing' && selectedProfile))
+  const activePackageProfile = selectedSearchProfile?.hasActivePackage || selectedProfile?.hasActivePackage
   const reviewType = selectedSearchProfile || parentAccount ? 'Aktivasi paket' : isNewAccount ? 'Pembuatan akun' : 'Konversi akun'
   const title = selectedSearchProfile || parentAccount ? 'Review tujuan paket' : isNewAccount ? 'Review pembuatan akun' : 'Review migrasi akun'
   const reviewNote = selectedSearchProfile
@@ -2550,7 +2824,7 @@ function ReviewSheet({ accountStatus, childName, consent, grade, lookupState, pa
         : 'Akun aktif akan dikonversi menjadi Profil Anak.'
   const accessValue = usesExistingProfile ? 'Tidak berubah' : 'Username + PIN'
   const accessCopy = usesExistingProfile ? 'Gunakan akses profil yang sudah ada.' : parentAccount || isNewAccount ? 'Username dan PIN dikirim ke WhatsApp Orang Tua.' : 'Login anak berubah ke Username dan PIN.'
-  const consentCopy = usesExistingProfile ? 'Tujuan paket sudah dikonfirmasi ke customer.' : 'Perubahan akses login dan pemrosesan data sudah dijelaskan ke customer.'
+  const consentCopy = usesExistingProfile ? 'Profil Anak dan Akun Orang Tua tujuan paket sudah dikonfirmasi ke customer.' : 'Perubahan akses login dan pemrosesan data sudah dijelaskan ke customer.'
 
   return (
     <BottomSheet title={title} onClose={onClose}>
@@ -2564,13 +2838,14 @@ function ReviewSheet({ accountStatus, childName, consent, grade, lookupState, pa
         <div className="review-facts" aria-label="Detail review">
           <ReviewFact label="Akun Orang Tua" value={parentDisplayName} meta={parentDisplayPhone} />
           <ReviewFact label="Profil Tujuan" value={targetProfileName} meta={targetGrade} />
+          {activePackageProfile && <ReviewFact label="Tujuan Transaksi" value={getPackageIntentLabel(packageIntent)} meta="Dipilih agent sebelum review" />}
           <ReviewFact label="Akses Anak" value={accessValue} meta={accessCopy} />
         </div>
 
         <section className="review-checklist" aria-label="Yang perlu dipastikan">
           <h4>Pastikan sebelum lanjut</h4>
           <ReviewCheckItem>Profil tujuan paket sudah sesuai dengan customer.</ReviewCheckItem>
-          {(selectedSearchProfile?.hasActivePackage || selectedProfile?.hasActivePackage) && <ReviewCheckItem warning>Profil ini sudah punya paket aktif. Konfirmasi renewal atau upgrade.</ReviewCheckItem>}
+          {activePackageProfile && <ReviewCheckItem warning>Profil ini sudah punya paket aktif. Tujuan transaksi: {getPackageIntentLabel(packageIntent)}.</ReviewCheckItem>}
           {usesExistingProfile ? <ReviewCheckItem>Akses profil anak tetap mengikuti pengaturan yang sudah ada.</ReviewCheckItem> : <ReviewCheckItem>No. HP/email anak hanya tersimpan sebagai data profil.</ReviewCheckItem>}
         </section>
 

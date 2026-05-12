@@ -421,6 +421,10 @@ del {
 .structure-map + .callout,
 .callout + .state-summary,
 .state-summary + .stage-block,
+.selected-target-summary + .intent-choice,
+.selected-target-summary + .callout,
+.intent-choice + .callout,
+.duplicate-profile-warning,
 .stage-stepper + .stage-block,
 .wizard-back + .stage-block {
   margin-top: 10px;
@@ -526,8 +530,16 @@ select:invalid {
 }
 
 input[readonly] {
-  background: #f8fafc;
-  color: #667085;
+  border-color: #b9c8d8;
+  background: #eef3f8;
+  color: #53647a;
+  cursor: not-allowed;
+}
+
+.locked-field input[readonly] {
+  border-color: #aab9ca;
+  background: repeating-linear-gradient(135deg, #eef3f8 0, #eef3f8 10px, #f7f9fc 10px, #f7f9fc 20px);
+  box-shadow: inset 0 0 0 1px #d5dee9;
 }
 
 .lookup-row button {
@@ -793,6 +805,187 @@ input[readonly] {
 
 .new-profile-inline h4 {
   margin: 4px 0 0;
+}
+
+.selected-target-summary {
+  display: grid;
+  gap: 9px;
+  padding: 11px;
+  border: 1px solid #bfe9e8;
+  border-radius: 8px;
+  background: #f3fbfb;
+}
+
+.summary-kicker {
+  color: #0a7f95;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.summary-grid div {
+  min-width: 0;
+}
+
+.summary-grid span,
+.intent-status span {
+  display: block;
+  color: #667085;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.summary-grid strong,
+.intent-status strong {
+  display: block;
+  margin-top: 2px;
+  color: #344054;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.summary-grid small {
+  display: block;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.intent-status {
+  padding: 8px;
+  border: 1px solid #f2df9b;
+  border-radius: 8px;
+  background: #fff8df;
+}
+
+.intent-status.ready {
+  border-color: #8dd7a3;
+  background: #edfdf2;
+}
+
+.intent-choice {
+  display: grid;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid #f2df9b;
+  border-radius: 8px;
+  background: #fff8df;
+}
+
+.intent-choice-head {
+  display: grid;
+  gap: 3px;
+}
+
+.intent-choice-head strong {
+  color: #344054;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.intent-choice-head p {
+  color: #667085;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.intent-options {
+  display: grid;
+  gap: 8px;
+}
+
+.intent-option {
+  width: 100%;
+  min-height: 54px;
+  padding: 10px 34px 10px 10px;
+  border: 1px solid #e3ca73;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #344054;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+}
+
+.intent-option::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #c7a83d;
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+.intent-option.active {
+  border-color: #15aeca;
+  background: #f4fdff;
+  box-shadow: inset 0 0 0 1px #15aeca;
+}
+
+.intent-option.active::after {
+  border: 5px solid #15aeca;
+}
+
+.intent-option span,
+.intent-option small {
+  display: block;
+}
+
+.intent-option span {
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.intent-option small {
+  margin-top: 3px;
+  color: #667085;
+  font-size: 10.5px;
+  line-height: 1.3;
+}
+
+.duplicate-profile-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.duplicate-profile-list button {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 46px;
+  padding: 8px 10px;
+  border: 1px solid #e3ca73;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #344054;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.duplicate-profile-list span {
+  color: #344054;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.duplicate-ack {
+  border-color: #e3ca73;
+  color: #8a6a08;
 }
 
 .stage-stepper {
@@ -1718,6 +1911,32 @@ input[readonly] {
   color: #344054;
   font-size: 12px;
   font-weight: 800;
+}
+
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.locked-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  padding: 4px 7px;
+  border: 1px solid #cbd6e2;
+  border-radius: 999px;
+  background: #f3f6fa;
+  color: #53647a;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.locked-chip svg {
+  flex: 0 0 auto;
 }
 
 .form-fields label input,
