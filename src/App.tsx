@@ -269,6 +269,34 @@ function canCheckParentPhone(phone: string) {
   return phone.replace(/\D/g, '').length >= 8
 }
 
+function normalizePhoneDigits(phone: string) {
+  return phone.replace(/\D/g, '')
+}
+
+function getParentUpdateState(account: ParentProfileAccount, parentName: string, parentPhone: string) {
+  const nextName = parentName.trim()
+  const nextPhone = parentPhone.trim()
+  const normalizedNextPhone = normalizePhoneDigits(nextPhone)
+  const normalizedCurrentPhone = normalizePhoneDigits(account.phone)
+  const nameChanged = Boolean(nextName && nextName !== account.name)
+  const phoneChanged = Boolean(normalizedNextPhone && normalizedNextPhone !== normalizedCurrentPhone)
+  const changed = nameChanged || phoneChanged
+  const registeredAccount = phoneChanged ? getRegisteredParentAccount(nextPhone) : null
+  const registeredToOtherParent = Boolean(registeredAccount && registeredAccount.serial !== account.serial)
+  const isChildContact = phoneChanged && account.profiles.some((profile) => normalizePhoneDigits(profile.contact ?? '') === normalizedNextPhone)
+
+  return {
+    changed,
+    nameChanged,
+    nextName: nextName || account.name,
+    nextPhone: nextPhone || account.phone,
+    phoneChanged,
+    isChildContact,
+    registeredAccount,
+    registeredToOtherParent,
+  }
+}
+
 function isParentAccountWithChildrenPhone(phone: string) {
   const normalizedPhone = phone.replace(/\D/g, '')
 
@@ -443,6 +471,9 @@ function App() {
   const [, setPackageIntent] = useState<PackageIntent>(null)
   const [duplicateProfileAcknowledged, setDuplicateProfileAcknowledged] = useState(false)
   const [lookupPickerOpen, setLookupPickerOpen] = useState(false)
+  const [parentUpdateOpen, setParentUpdateOpen] = useState(false)
+  const [parentUpdateName, setParentUpdateName] = useState('')
+  const [parentUpdatePhone, setParentUpdatePhone] = useState('')
 
   const isExistingFlow = accountStatus === 'existing'
   const isOptionTwo = prototypeOption === '2'
@@ -451,6 +482,8 @@ function App() {
   const hasContactOwnerDecision = !usesMappingDecision || contactOwner !== null
   const parentContactSelected = usesMappingDecision ? contactOwner === 'parent' : usesParentIdentity
   const parentLookupAccount = getLookupParentAccount(lookupState)
+  const parentUpdateState = parentLookupAccount ? getParentUpdateState(parentLookupAccount, parentUpdateName, parentUpdatePhone) : null
+  const parentUpdateBlocked = Boolean(parentUpdateState?.registeredToOtherParent)
   const selectedChildSearchProfile = childProfileSearchResults.find((profile) => profile.id === selectedChildSearchProfileId) ?? null
   const selectedChildProfile = parentLookupAccount?.profiles.find((profile) => profile.id === selectedChildProfileId) ?? selectedChildSearchProfile
   const shouldCreateProfileForParent = Boolean(parentLookupAccount && profileTarget === 'new')
@@ -459,9 +492,9 @@ function App() {
   const searchProfileReady = Boolean(isSearchResolutionLookup(lookupState) && selectedChildSearchProfile)
   const showMigrationForm = isExistingFlow && lookupState === 'existing-old-account' && hasContactOwnerDecision
   const showNewAccountForm = accountStatus === 'new' && lookupState === 'new-available'
-  const effectiveParentPhone = parentLookupAccount?.phone ?? (showNewAccountForm ? parentPhone || phone : parentContactSelected ? phone : parentPhone)
-  const effectiveParentAccount = parentContactSelected ? null : getRegisteredParentAccount(effectiveParentPhone)
-  const effectiveParentName = parentLookupAccount?.name ?? (effectiveParentAccount?.name || parentName || '')
+  const effectiveParentPhone = parentLookupAccount ? parentUpdateState?.nextPhone ?? parentLookupAccount.phone : showNewAccountForm ? parentPhone || phone : parentContactSelected ? phone : parentPhone
+  const effectiveParentAccount = parentContactSelected || parentLookupAccount ? null : getRegisteredParentAccount(effectiveParentPhone)
+  const effectiveParentName = parentLookupAccount ? parentUpdateState?.nextName ?? parentLookupAccount.name : effectiveParentAccount?.name || parentName || ''
   const effectiveChildName = selectedChildProfile?.name ?? childName
   const parentDataReady = Boolean(canCheckParentPhone(effectiveParentPhone) && effectiveParentName.trim())
   const multipleMatchReady = Boolean(lookupState === 'existing-multiple-matches' && selectedChildSearchProfile)
@@ -469,6 +502,7 @@ function App() {
   const childDataReady = Boolean(effectiveChildName.trim() && (selectedChildProfile ? true : grade))
   const parentProfileTargetReady = Boolean(
     parentLookupAccount
+    && !parentUpdateBlocked
     && (profileTarget === 'existing' ? selectedChildProfile : shouldCreateProfileForParent && childProfileFormReady && !duplicateProfileBlocking),
   )
   const migrationFormReady = Boolean(showMigrationForm && parentDataReady && childDataReady)
@@ -551,6 +585,7 @@ function App() {
     if (lookupState === 'idle') return 'Input email, no. HP, atau user serial lalu cek akun'
     if (lookupState === 'existing-not-registered' || lookupState === 'existing-child-phone' || lookupState === 'new-registered') return 'Ikuti instruksi pada hasil pencarian'
     if (isSearchResolutionLookup(lookupState) && !selectedChildSearchProfile) return 'Pilih Child tujuan paket'
+    if (parentUpdateBlocked) return 'Periksa No. HP Parent yang akan diperbarui'
     if (parentLookupAccount && duplicateProfileBlocking) return 'Cek profil mirip sebelum lanjut'
     if (parentLookupAccount && !parentProfileTargetReady) return 'Tentukan Child tujuan paket'
     if (lookupState === 'existing-old-account' && !migrationFormReady) return 'Lengkapi data Parent dan Child'
@@ -646,6 +681,9 @@ function App() {
     setPackageIntent(null)
     setDuplicateProfileAcknowledged(false)
     setLookupPickerOpen(false)
+    setParentUpdateOpen(false)
+    setParentUpdateName('')
+    setParentUpdatePhone('')
 
     if (!phone.trim()) {
       setLookupState('idle')
@@ -792,6 +830,9 @@ function App() {
               setLookupPickerOpen={setLookupPickerOpen}
               parentName={parentName}
               parentPhone={parentPhone}
+              parentUpdateName={parentUpdateName}
+              parentUpdateOpen={parentUpdateOpen}
+              parentUpdatePhone={parentUpdatePhone}
               phone={phone}
               setAccountStatus={handleAccountStatusChange}
               setChildEmail={setChildEmail}
@@ -802,6 +843,9 @@ function App() {
               setGrade={setGrade}
               setParentName={setParentName}
               setParentPhone={setParentPhone}
+              setParentUpdateName={setParentUpdateName}
+              setParentUpdateOpen={setParentUpdateOpen}
+              setParentUpdatePhone={setParentUpdatePhone}
               setPhone={setPhone}
               setProfileTarget={handleProfileTargetChange}
               setSelectedChildProfileId={handleSelectedChildProfileIdChange}
@@ -1015,6 +1059,9 @@ function PurchasePurposeCard({
   lookupPickerOpen,
   parentName,
   parentPhone,
+  parentUpdateName,
+  parentUpdateOpen,
+  parentUpdatePhone,
   phone,
   profileTarget,
   selectedChildProfileId,
@@ -1031,6 +1078,9 @@ function PurchasePurposeCard({
   setLookupPickerOpen,
   setParentName,
   setParentPhone,
+  setParentUpdateName,
+  setParentUpdateOpen,
+  setParentUpdatePhone,
   setPhone,
   setPackageIntent,
   setProfileTarget,
@@ -1063,6 +1113,9 @@ function PurchasePurposeCard({
           lookupPickerOpen={lookupPickerOpen}
           parentName={parentName}
           parentPhone={parentPhone}
+          parentUpdateName={parentUpdateName}
+          parentUpdateOpen={parentUpdateOpen}
+          parentUpdatePhone={parentUpdatePhone}
           phone={phone}
           profileTarget={profileTarget}
           selectedChildProfileId={selectedChildProfileId}
@@ -1079,6 +1132,9 @@ function PurchasePurposeCard({
           setLookupPickerOpen={setLookupPickerOpen}
           setParentName={setParentName}
           setParentPhone={setParentPhone}
+          setParentUpdateName={setParentUpdateName}
+          setParentUpdateOpen={setParentUpdateOpen}
+          setParentUpdatePhone={setParentUpdatePhone}
           setPhone={setPhone}
           setPackageIntent={setPackageIntent}
           setProfileTarget={setProfileTarget}
@@ -1141,6 +1197,9 @@ function PurchasePurposeCard({
             childName={childName}
             childPhone={childPhone}
             grade={grade}
+            parentUpdateName={parentUpdateName}
+            parentUpdateOpen={parentUpdateOpen}
+            parentUpdatePhone={parentUpdatePhone}
             profileTarget={profileTarget}
             selectedChildProfileId={selectedChildProfileId}
             duplicateProfileAcknowledged={duplicateProfileAcknowledged}
@@ -1151,6 +1210,9 @@ function PurchasePurposeCard({
             setGrade={setGrade}
             setDuplicateProfileAcknowledged={setDuplicateProfileAcknowledged}
             setPackageIntent={setPackageIntent}
+            setParentUpdateName={setParentUpdateName}
+            setParentUpdateOpen={setParentUpdateOpen}
+            setParentUpdatePhone={setParentUpdatePhone}
             setProfileTarget={setProfileTarget}
             setSelectedChildProfileId={setSelectedChildProfileId}
           />
@@ -1236,6 +1298,9 @@ function OptionThreeWizard({
   lookupPickerOpen,
   parentName,
   parentPhone,
+  parentUpdateName,
+  parentUpdateOpen,
+  parentUpdatePhone,
   phone,
   profileTarget,
   selectedChildProfileId,
@@ -1252,6 +1317,9 @@ function OptionThreeWizard({
   setLookupPickerOpen,
   setParentName,
   setParentPhone,
+  setParentUpdateName,
+  setParentUpdateOpen,
+  setParentUpdatePhone,
   setPhone,
   setPackageIntent,
   setProfileTarget,
@@ -1306,6 +1374,9 @@ function OptionThreeWizard({
               childName={childName}
               childPhone={childPhone}
               grade={grade}
+              parentUpdateName={parentUpdateName}
+              parentUpdateOpen={parentUpdateOpen}
+              parentUpdatePhone={parentUpdatePhone}
               duplicateProfileAcknowledged={duplicateProfileAcknowledged}
               duplicateProfileMatches={duplicateProfileMatches}
               profileTarget={profileTarget}
@@ -1316,6 +1387,9 @@ function OptionThreeWizard({
               setGrade={setGrade}
               setDuplicateProfileAcknowledged={setDuplicateProfileAcknowledged}
               setPackageIntent={setPackageIntent}
+              setParentUpdateName={setParentUpdateName}
+              setParentUpdateOpen={setParentUpdateOpen}
+              setParentUpdatePhone={setParentUpdatePhone}
               setProfileTarget={setProfileTarget}
               setSelectedChildProfileId={setSelectedChildProfileId}
             />
@@ -1418,6 +1492,9 @@ type PurchasePurposeCardProps = {
   lookupPickerOpen: boolean
   parentName: string
   parentPhone: string
+  parentUpdateName: string
+  parentUpdateOpen: boolean
+  parentUpdatePhone: string
   phone: string
   profileTarget: ProfileTarget
   selectedChildProfileId: string
@@ -1431,6 +1508,9 @@ type PurchasePurposeCardProps = {
   setGrade: (value: string) => void
   setParentName: (value: string) => void
   setParentPhone: (value: string) => void
+  setParentUpdateName: (value: string) => void
+  setParentUpdateOpen: (value: boolean) => void
+  setParentUpdatePhone: (value: string) => void
   setPhone: (value: string) => void
   setPackageIntent: (value: PackageIntent) => void
   setProfileTarget: (value: ProfileTarget) => void
@@ -1805,8 +1885,8 @@ function WizardReviewStep({ accountStatus, childName, consent, grade, parentAcco
   const selectedSearchProfile = childProfileSearchResults.find((profile) => profile.id === selectedChildSearchProfileId)
   const parentLabel = usesParentIdentity ? parentName || 'Orang tua dari data akun lama' : parentName || 'Orang tua'
   const parentNumberLabel = usesParentIdentity ? phone : parentPhone || phone || 'yang diisi agent'
-  const parentDisplayName = selectedSearchProfile?.parentName ?? parentAccount?.name ?? parentLabel
-  const parentDisplayPhone = selectedSearchProfile?.parentPhone ?? parentAccount?.phone ?? parentNumberLabel
+  const parentDisplayName = selectedSearchProfile?.parentName ?? (parentName || parentAccount?.name || parentLabel)
+  const parentDisplayPhone = selectedSearchProfile?.parentPhone ?? (parentPhone || parentAccount?.phone || parentNumberLabel)
   const targetProfileName = selectedSearchProfile
     ? selectedSearchProfile.name
     : parentAccount
@@ -2142,7 +2222,7 @@ function SearchResolutionResults({ lookupState, selectedChildSearchProfileId, se
     </div>
   )
 }
-function ProfileTargetStage({ account, childEmail, childName, childPhone, duplicateProfileAcknowledged, duplicateProfileMatches, grade, profileTarget, selectedChildProfileId, setChildEmail, setChildName, setChildPhone, setDuplicateProfileAcknowledged, setGrade, setPackageIntent, setProfileTarget, setSelectedChildProfileId }: {
+function ProfileTargetStage({ account, childEmail, childName, childPhone, duplicateProfileAcknowledged, duplicateProfileMatches, grade, parentUpdateName, parentUpdateOpen, parentUpdatePhone, profileTarget, selectedChildProfileId, setChildEmail, setChildName, setChildPhone, setDuplicateProfileAcknowledged, setGrade, setPackageIntent, setParentUpdateName, setParentUpdateOpen, setParentUpdatePhone, setProfileTarget, setSelectedChildProfileId }: {
   account: ParentProfileAccount
   childEmail: string
   childName: string
@@ -2150,6 +2230,9 @@ function ProfileTargetStage({ account, childEmail, childName, childPhone, duplic
   duplicateProfileAcknowledged: boolean
   duplicateProfileMatches: ChildProfile[]
   grade: string
+  parentUpdateName: string
+  parentUpdateOpen: boolean
+  parentUpdatePhone: string
   profileTarget: ProfileTarget
   selectedChildProfileId: string
   setChildEmail: (value: string) => void
@@ -2158,11 +2241,23 @@ function ProfileTargetStage({ account, childEmail, childName, childPhone, duplic
   setDuplicateProfileAcknowledged: (value: boolean) => void
   setGrade: (value: string) => void
   setPackageIntent: (value: PackageIntent) => void
+  setParentUpdateName: (value: string) => void
+  setParentUpdateOpen: (value: boolean) => void
+  setParentUpdatePhone: (value: string) => void
   setProfileTarget: (value: ProfileTarget) => void
   setSelectedChildProfileId: (value: string) => void
 }) {
   const selectedProfile = account.profiles.find((profile) => profile.id === selectedChildProfileId)
   const hasProfiles = account.profiles.length > 0
+  const parentUpdateState = getParentUpdateState(account, parentUpdateName, parentUpdatePhone)
+  const parentDisplayName = parentUpdateState.nextName
+  const parentDisplayPhone = parentUpdateState.nextPhone
+
+  const openParentUpdate = () => {
+    if (!parentUpdateName.trim()) setParentUpdateName(account.name)
+    if (!parentUpdatePhone.trim()) setParentUpdatePhone(account.phone)
+    setParentUpdateOpen(true)
+  }
 
   const selectExistingProfile = (profile: ChildProfile) => {
     setProfileTarget('existing')
@@ -2215,12 +2310,25 @@ function ProfileTargetStage({ account, childEmail, childName, childPhone, duplic
       )}
 
       {profileTarget === 'existing' && selectedProfile && (
-        <SelectedTargetSummary
-          parentName={account.name}
-          parentPhone={account.phone}
-          parentSerial={account.serial}
-          profile={selectedProfile}
-        />
+        <>
+          <SelectedTargetSummary
+            parentName={parentDisplayName}
+            parentPhone={parentDisplayPhone}
+            parentSerial={account.serial}
+            profile={selectedProfile}
+          />
+          <ParentUpdatePanel
+            account={account}
+            open={parentUpdateOpen}
+            parentName={parentUpdateName || account.name}
+            parentPhone={parentUpdatePhone || account.phone}
+            updateState={parentUpdateState}
+            setOpen={setParentUpdateOpen}
+            setParentName={setParentUpdateName}
+            setParentPhone={setParentUpdatePhone}
+            onOpen={openParentUpdate}
+          />
+        </>
       )}
 
       {profileTarget === 'new' && (
@@ -2244,6 +2352,85 @@ function ProfileTargetStage({ account, childEmail, childName, childPhone, duplic
           />
         </div>
       )}
+    </div>
+  )
+}
+
+function ParentUpdatePanel({ account, onOpen, open, parentName, parentPhone, setOpen, setParentName, setParentPhone, updateState }: {
+  account: ParentProfileAccount
+  onOpen: () => void
+  open: boolean
+  parentName: string
+  parentPhone: string
+  setOpen: (value: boolean) => void
+  setParentName: (value: string) => void
+  setParentPhone: (value: string) => void
+  updateState: ReturnType<typeof getParentUpdateState>
+}) {
+  const hasValidPhoneLength = canCheckParentPhone(parentPhone)
+
+  if (!open && updateState.changed) {
+    return (
+      <div className="parent-update-summary">
+        <div>
+          <strong>Data Parent akan diperbarui</strong>
+          <small>{account.name} · {account.phone}</small>
+          <small>Menjadi {updateState.nextName} · {updateState.nextPhone}</small>
+        </div>
+        <button className="inline-action" type="button" onClick={onOpen}>Ubah lagi</button>
+      </div>
+    )
+  }
+
+  if (!open) {
+    return (
+      <button className="inline-action parent-update-trigger" type="button" onClick={onOpen}>Ubah data Parent</button>
+    )
+  }
+
+  return (
+    <div className="parent-update-panel">
+      <div className="parent-update-head">
+        <div>
+          <strong>Update Data Parent</strong>
+          <small>Gunakan jika customer menyampaikan data Parent berubah saat pembelian.</small>
+        </div>
+        <button type="button" onClick={() => setOpen(false)} aria-label="Tutup update data Parent"><X size={14} /></button>
+      </div>
+      <div className="form-fields compact-form">
+        <TextField label="Nama Parent" placeholder="Masukan nama Parent" value={parentName} onChange={setParentName} />
+        <TextField label="No. HP Parent" placeholder="Masukan No. HP Parent terbaru" value={parentPhone} onChange={setParentPhone} />
+      </div>
+      {updateState.registeredToOtherParent ? (
+        <Callout variant="danger">
+          <strong>Nomor sudah dipakai Parent lain</strong>
+          <PointList items={[
+            <>Nomor ini melekat ke akun <strong>{updateState.registeredAccount?.name}</strong>.</>,
+            'Jangan update sebelum customer mengonfirmasi akun Parent yang benar.',
+          ]} />
+        </Callout>
+      ) : updateState.isChildContact ? (
+        <Callout variant="info">
+          <strong>Nomor sama dengan kontak Child</strong>
+          <p>Ini boleh dilanjutkan karena No. HP Child hanya data profil dan bukan akun login.</p>
+        </Callout>
+      ) : updateState.changed && !hasValidPhoneLength ? (
+        <Callout variant="warning">
+          <strong>No. HP Parent belum lengkap</strong>
+          <p>Masukkan minimal 8 digit agar perubahan bisa dilanjutkan ke review.</p>
+        </Callout>
+      ) : updateState.changed ? (
+        <Callout variant="success">
+          <strong>Data Parent akan diperbarui</strong>
+          <p>Perubahan ini akan dibawa ke review dan diproses bersama transaksi.</p>
+        </Callout>
+      ) : (
+        <Callout>
+          <strong>Belum ada perubahan</strong>
+          <p>Ubah nama atau No. HP Parent jika customer memberikan data baru.</p>
+        </Callout>
+      )}
+
     </div>
   )
 }
@@ -3060,7 +3247,14 @@ function TextField({ helper, label, onChange, placeholder, readOnly = false, val
         <span>{label}</span>
         {readOnly && <span className="locked-chip"><Lock size={11} /> Dikunci</span>}
       </span>
-      <input aria-readonly={readOnly} placeholder={placeholder} readOnly={readOnly} value={value} onChange={(event) => onChange?.(event.target.value)} />
+      <input
+        aria-readonly={readOnly}
+        autoComplete="off"
+        placeholder={placeholder}
+        readOnly={readOnly}
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
+      />
       {helper && <small>{helper}</small>}
     </label>
   )
@@ -3163,8 +3357,8 @@ function ReviewSheet({ accountStatus, childName, consent, grade, lookupState, pa
   const selectedSearchProfile = childProfileSearchResults.find((profile) => profile.id === selectedChildSearchProfileId)
   const parentLabel = usesParentIdentity ? parentName || 'Orang tua dari data akun lama' : parentName || 'Orang tua'
   const parentNumberLabel = usesParentIdentity ? phone : parentPhone || phone || 'yang diisi agent'
-  const parentDisplayName = selectedSearchProfile?.parentName ?? parentAccount?.name ?? parentLabel
-  const parentDisplayPhone = selectedSearchProfile?.parentPhone ?? parentAccount?.phone ?? parentNumberLabel
+  const parentDisplayName = selectedSearchProfile?.parentName ?? (parentName || parentAccount?.name || parentLabel)
+  const parentDisplayPhone = selectedSearchProfile?.parentPhone ?? (parentPhone || parentAccount?.phone || parentNumberLabel)
   const targetProfileName = selectedSearchProfile
     ? selectedSearchProfile.name
     : parentAccount
