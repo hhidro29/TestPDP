@@ -17,6 +17,7 @@ type AccountStatus = 'existing' | 'new'
 type LookupState =
   | 'idle'
   | 'existing-old-account'
+  | 'existing-old-account-with-child-profile-contact'
   | 'existing-not-registered'
   | 'existing-child-phone'
   | 'existing-child-profile-contact'
@@ -33,10 +34,13 @@ type PrototypeOptionId = '1' | '2' | '3'
 type ContactOwner = 'child' | 'parent' | null
 type ProfileTarget = 'existing' | 'new' | null
 type PackageIntent = 'renewal' | 'upgrade' | 'additional' | null
+type LeadAssignmentStatus = 'assigned-to-me' | 'no-lead'
 type WizardStep = 1 | 2 | 3 | 4 | 5
 type ChildProfile = {
   contact?: string
   grade: string
+  leadStatus?: LeadAssignmentStatus
+  lastLoginAt?: string
   hasActivePackage?: boolean
   id: string
   name: string
@@ -86,7 +90,7 @@ const prototypeOptions: Array<{
     label: 'Opsi 2',
     title: 'Explicit Mapping',
     summary: 'Agent memilih pemilik kontak akun lama secara eksplisit sebelum mengisi data migrasi.',
-    steps: ['Cek akun lama', 'Pilih kontak milik Child/Parent', 'Cek No. HP orang tua', 'Review lalu pilih metode bayar'],
+    steps: ['Cek akun lama', 'Pilih kontak milik Anak/Orang Tua', 'Cek No. HP orang tua', 'Review lalu pilih metode bayar'],
   },
   {
     id: '3',
@@ -109,9 +113,12 @@ function getInitialPrototypeOption(): PrototypeOptionId {
 }
 
 const existingAccount = {
+  leadStatus: 'assigned-to-me' as LeadAssignmentStatus,
+  lastLoginAt: '13 Mei 2026, 10:28',
   name: 'Keisha Azzahra',
   email: 'keisha.azzahra@studentmail.test',
-  serial: 'AZMIGD1L0YPTRBFD',
+  phone: '081234567890',
+  serial: 'AZMIGD1L0YPTBMAR',
 }
 
 const registeredParentAccount = {
@@ -123,19 +130,19 @@ const registeredParentAccount = {
 const parentAccountWithSingleChild: ParentProfileAccount = {
   name: 'Nadia Rahma',
   phone: '081381240015',
-  serial: 'AZMIGD1L0YPTNDRH',
+  serial: 'AZMIGD1L0YPTB015',
   profiles: [
-    { contact: '081234700111', grade: 'Kelas 6 SD', id: 'rafa', name: 'Rafa Alfarizi', serial: 'AZMIGD1L0YPTRAAF' },
+    { contact: '081234700111', grade: 'Kelas 6 SD', id: 'rafa', lastLoginAt: '13 Mei 2026, 08:12', name: 'Rafa Alfarizi', serial: 'AZMIGD1L0YPTB111' },
   ],
 }
 
 const parentAccountWithChildren: ParentProfileAccount = {
   name: 'Agus Salim',
   phone: '081276540022',
-  serial: 'AZMIGD1L0YPTAGSL',
+  serial: 'AZMIGD1L0YPTB022',
   profiles: [
-    { contact: '081234700555', grade: 'Kelas 5 SD', id: 'xiera', name: 'Xiera Gentika', serial: 'AZMIGD1L0YPTXIGT' },
-    { contact: '081234700555', grade: 'Kelas 8 SMP', hasActivePackage: true, id: 'salsabila', name: 'Salsabila Putri', packageNames: ['ruangbelajar SMP 1 Tahun', 'Roboguru Plus 6 Bulan'], serial: 'AZMIGD1L0YPTSBPT' },
+    { contact: '081234700555', grade: 'Kelas 5 SD', id: 'xiera', lastLoginAt: '12 Mei 2026, 19:42', name: 'Xiera Gentika', serial: 'AZMIGD1L0YPTXIGT' },
+    { contact: '081234700555', grade: 'Kelas 8 SMP', hasActivePackage: true, id: 'salsabila', lastLoginAt: '11 Mei 2026, 20:18', name: 'Salsabila Putri', packageNames: ['ruangbelajar SMP 1 Tahun', 'Roboguru Plus 6 Bulan'], serial: 'AZMIGD1L0YPTSBPT' },
   ],
 }
 
@@ -143,7 +150,7 @@ const parentAccountWithoutChildren: ParentProfileAccount = {
   name: 'Maya Lestari',
   phone: '081399880044',
   profiles: [],
-  serial: 'AZMIGD1L0YPTMYLS',
+  serial: 'AZMIGD1L0YPTB044',
 }
 
 const singleChildProfileSearchResults: ChildProfile[] = [
@@ -151,11 +158,13 @@ const singleChildProfileSearchResults: ChildProfile[] = [
     contact: '081234700111',
     grade: 'Kelas 6 SD',
     id: 'child-rafa-nadia',
+    leadStatus: 'assigned-to-me',
+    lastLoginAt: '13 Mei 2026, 08:12',
     name: 'Rafa Alfarizi',
     parentName: parentAccountWithSingleChild.name,
     parentPhone: parentAccountWithSingleChild.phone,
     parentSerial: parentAccountWithSingleChild.serial,
-    serial: 'AZMIGD1L0YPTRAAF',
+    serial: 'AZMIGD1L0YPTB111',
   },
 ]
 
@@ -164,6 +173,8 @@ const sameParentChildProfileSearchResults: ChildProfile[] = [
     contact: '081234700555',
     grade: 'Kelas 7 SMP',
     id: 'child-xiera-agus',
+    leadStatus: 'assigned-to-me',
+    lastLoginAt: '12 Mei 2026, 19:42',
     name: 'Xiera Gentika',
     parentName: parentAccountWithChildren.name,
     parentPhone: parentAccountWithChildren.phone,
@@ -175,6 +186,8 @@ const sameParentChildProfileSearchResults: ChildProfile[] = [
     grade: 'Kelas 8 SMP',
     hasActivePackage: true,
     id: 'child-salsabila-agus-same',
+    leadStatus: 'no-lead',
+    lastLoginAt: '11 Mei 2026, 20:18',
     name: 'Salsabila Putri',
     packageNames: ['ruangbelajar SMP 1 Tahun', 'Roboguru Plus 6 Bulan'],
     parentName: parentAccountWithChildren.name,
@@ -189,6 +202,8 @@ const crossParentChildProfileSearchResults: ChildProfile[] = [
     contact: '081234700666',
     grade: 'Kelas 6 SD',
     id: 'child-rafa-nadia-cross',
+    leadStatus: 'no-lead',
+    lastLoginAt: '13 Mei 2026, 08:12',
     name: 'Rafa Alfarizi',
     parentName: parentAccountWithSingleChild.name,
     parentPhone: parentAccountWithSingleChild.phone,
@@ -200,6 +215,8 @@ const crossParentChildProfileSearchResults: ChildProfile[] = [
     grade: 'Kelas 8 SMP',
     hasActivePackage: true,
     id: 'child-salsabila-agus-cross',
+    leadStatus: 'assigned-to-me',
+    lastLoginAt: '11 Mei 2026, 20:18',
     name: 'Salsabila Putri',
     packageNames: ['ruangbelajar SMP 1 Tahun', 'Roboguru Plus 6 Bulan'],
     parentName: parentAccountWithChildren.name,
@@ -211,6 +228,8 @@ const crossParentChildProfileSearchResults: ChildProfile[] = [
     contact: '081234700666',
     grade: 'Kelas 10 SMA',
     id: 'child-keisha-ratih',
+    leadStatus: 'no-lead',
+    lastLoginAt: '10 Mei 2026, 21:03',
     name: 'Keisha Azzahra',
     parentName: 'Ratih Pramesti',
     parentPhone: '081217003388',
@@ -221,30 +240,52 @@ const crossParentChildProfileSearchResults: ChildProfile[] = [
 
 const mixedChildProfileSearchResults: ChildProfile[] = [
   {
-    contact: parentAccountWithChildren.phone,
+    contact: '081234700777',
     grade: 'Kelas 5 SD',
     id: 'child-xiera-agus-mixed',
+    leadStatus: 'assigned-to-me',
+    lastLoginAt: '12 Mei 2026, 19:42',
     name: 'Xiera Gentika',
     parentName: parentAccountWithChildren.name,
-    parentPhone: parentAccountWithChildren.phone,
+    parentPhone: '081234700777',
     parentSerial: parentAccountWithChildren.serial,
     serial: 'AZMIGD1L0YPTXIMX',
   },
   {
-    contact: parentAccountWithChildren.phone,
+    contact: '081234700777',
     grade: 'Kelas 8 SMP',
     hasActivePackage: true,
     id: 'child-salsabila-agus',
+    leadStatus: 'no-lead',
+    lastLoginAt: '11 Mei 2026, 20:18',
     name: 'Salsabila Putri',
     packageNames: ['ruangbelajar SMP 1 Tahun', 'Roboguru Plus 6 Bulan'],
     parentName: parentAccountWithChildren.name,
-    parentPhone: parentAccountWithChildren.phone,
+    parentPhone: '081234700777',
     parentSerial: parentAccountWithChildren.serial,
     serial: 'AZMIGD1L0YPTSBMX',
   },
 ]
 
+const oldAccountChildProfileContactMatches: ChildProfile[] = [
+  {
+    contact: '081234700888',
+    grade: 'Kelas 9 SMP',
+    hasActivePackage: true,
+    id: 'child-bima-old-account-overlap',
+    leadStatus: 'no-lead',
+    lastLoginAt: '12 Mei 2026, 18:36',
+    name: 'Bima Arya',
+    packageNames: ['ruangbelajar SMP 1 Tahun'],
+    parentName: parentAccountWithChildren.name,
+    parentPhone: parentAccountWithChildren.phone,
+    parentSerial: parentAccountWithChildren.serial,
+    serial: 'AZMIGD1L0YPTB888',
+  },
+]
+
 const childProfileSearchResults: ChildProfile[] = [
+  ...oldAccountChildProfileContactMatches,
   ...singleChildProfileSearchResults,
   ...sameParentChildProfileSearchResults,
   ...crossParentChildProfileSearchResults,
@@ -271,6 +312,30 @@ function canCheckParentPhone(phone: string) {
 
 function normalizePhoneDigits(phone: string) {
   return phone.replace(/\D/g, '')
+}
+
+function normalizeLookupText(value: string) {
+  return value.replace(/[^a-z0-9]/gi, '').toLowerCase()
+}
+
+function isSerialLookupInput(value: string) {
+  const normalizedValue = normalizeLookupText(value)
+  return /[a-z]/i.test(value) && normalizedValue.length >= 8
+}
+
+function serialMatchesInput(serial: string | undefined, value: string) {
+  if (!serial || !isSerialLookupInput(value)) return false
+  const normalizedSerial = normalizeLookupText(serial)
+  const normalizedValue = normalizeLookupText(value)
+  return normalizedSerial.includes(normalizedValue) || normalizedValue.includes(normalizedSerial)
+}
+
+function profileSerialMatchesInput(profile: ChildProfile, value: string) {
+  return serialMatchesInput(profile.serial, value)
+}
+
+function parentAccountSerialMatchesInput(account: ParentProfileAccount, value: string) {
+  return serialMatchesInput(account.serial, value)
 }
 
 function getParentUpdateState(account: ParentProfileAccount, parentName: string, parentPhone: string) {
@@ -300,21 +365,32 @@ function getParentUpdateState(account: ParentProfileAccount, parentName: string,
 function isParentAccountWithChildrenPhone(phone: string) {
   const normalizedPhone = phone.replace(/\D/g, '')
 
-  return normalizedPhone === parentAccountWithChildren.phone || normalizedPhone.includes('540022')
+  return normalizedPhone === parentAccountWithChildren.phone || normalizedPhone.includes('540022') || parentAccountSerialMatchesInput(parentAccountWithChildren, phone)
 }
 
 function isParentAccountWithSingleChildPhone(phone: string) {
   const normalizedPhone = phone.replace(/\D/g, '')
 
-  return normalizedPhone === parentAccountWithSingleChild.phone || normalizedPhone.includes('240015')
+  return normalizedPhone === parentAccountWithSingleChild.phone || normalizedPhone.includes('240015') || parentAccountSerialMatchesInput(parentAccountWithSingleChild, phone)
 }
 
 function isParentAccountWithoutChildrenPhone(phone: string) {
-  return phone.replace(/\D/g, '').includes('880044')
+  return phone.replace(/\D/g, '').includes('880044') || parentAccountSerialMatchesInput(parentAccountWithoutChildren, phone)
 }
 
 function isParentProfileLookup(lookupState: LookupState) {
   return lookupState === 'existing-parent-single-child' || lookupState === 'existing-parent-with-children' || lookupState === 'existing-parent-empty'
+}
+
+function isOldAccountLookup(lookupState: LookupState) {
+  return lookupState === 'existing-old-account' || lookupState === 'existing-old-account-with-child-profile-contact'
+}
+
+function isLookupNoticeState(lookupState: LookupState) {
+  return lookupState === 'existing-not-registered'
+    || lookupState === 'existing-child-phone'
+    || lookupState === 'new-available'
+    || lookupState === 'new-registered'
 }
 
 function isSearchResolutionLookup(lookupState: LookupState) {
@@ -332,17 +408,39 @@ function getLookupParentAccount(lookupState: LookupState): ParentProfileAccount 
   return null
 }
 
+function getParentAccountChildProfiles(account: ParentProfileAccount) {
+  return account.profiles.map((profile) => ({
+    ...profile,
+    parentName: profile.parentName ?? account.name,
+    parentPhone: profile.parentPhone ?? account.phone,
+    parentSerial: profile.parentSerial ?? account.serial,
+  }))
+}
+
 function getChildProfileSearchResults(lookupState: LookupState) {
   if (lookupState === 'existing-child-profile-contact') return singleChildProfileSearchResults
   if (lookupState === 'existing-child-profiles-same-parent') return sameParentChildProfileSearchResults
   if (lookupState === 'existing-child-profiles-cross-parent') return crossParentChildProfileSearchResults
   if (lookupState === 'existing-multiple-matches') return mixedChildProfileSearchResults
 
+  const parentAccount = getLookupParentAccount(lookupState)
+  if (parentAccount) return getParentAccountChildProfiles(parentAccount)
+
   return []
 }
 
-function getChildProfileParentCount(profiles: ChildProfile[]) {
-  return new Set(profiles.map((profile) => profile.parentPhone)).size
+function getOldAccountProfileContactMatches(lookupState: LookupState) {
+  if (lookupState === 'existing-old-account-with-child-profile-contact') return oldAccountChildProfileContactMatches
+  return []
+}
+
+function getParentAccountFromChildProfile(profile: ChildProfile): ParentProfileAccount {
+  return {
+    name: profile.parentName ?? 'Orang Tua',
+    phone: profile.parentPhone ?? '',
+    profiles: [profile],
+    serial: profile.parentSerial ?? '',
+  }
 }
 
 function normalizeProfileName(value: string) {
@@ -368,6 +466,10 @@ function getActivePackageNames(profile: ChildProfile) {
   return profile.packageName ? [profile.packageName] : []
 }
 
+function LastLoginLine({ value }: { value?: string }) {
+  return <small className="last-login-line">Login terakhir: {value ?? 'Belum ada data'}</small>
+}
+
 function ActivePackageLines({ profile }: { profile: ChildProfile }) {
   const packages = getActivePackageNames(profile)
 
@@ -385,10 +487,13 @@ function ActivePackageLines({ profile }: { profile: ChildProfile }) {
   )
 }
 
-function UserSerial({ value }: { value?: string }) {
+function UserSerial({ match, value }: { match?: string; value?: string }) {
   if (!value) return null
 
-  return <span className="user-serial">SN {value}</span>
+  const serialLabel = `SN ${value}`
+  if (serialMatchesInput(value, match ?? '')) return <HighlightedMatch match={match} value={serialLabel} />
+
+  return <span className="user-serial">{serialLabel}</span>
 }
 
 
@@ -401,6 +506,7 @@ function isChildProfileLookupInput(value: string) {
   const numericValue = normalizedValue.replace(/\D/g, '')
 
   return numericValue.includes('700111')
+    || singleChildProfileSearchResults.some((profile) => profileSerialMatchesInput(profile, value))
     || normalizedValue.includes('rafa.alfarizi')
     || normalizedValue.includes('sn-rafa-2026')
     || normalizedValue.includes('single-profile')
@@ -436,6 +542,16 @@ function isMultipleMatchInput(value: string) {
     || normalizedValue.includes('multi')
 }
 
+function isOldAccountWithChildProfileContactInput(value: string) {
+  const normalizedValue = value.trim().toLowerCase()
+  const numericValue = normalizedValue.replace(/\D/g, '')
+
+  return numericValue.includes('700888')
+    || oldAccountChildProfileContactMatches.some((profile) => profileSerialMatchesInput(profile, value))
+    || normalizedValue.includes('akun-lama-anak-profile')
+    || normalizedValue.includes('old-account-overlap')
+}
+
 function getWizardStepTitle(step: WizardStep) {
   const titles: Record<WizardStep, string> = {
     1: 'Cari customer',
@@ -458,6 +574,7 @@ function App() {
   const [profileTarget, setProfileTarget] = useState<ProfileTarget>(null)
   const [selectedChildProfileId, setSelectedChildProfileId] = useState('')
   const [selectedChildSearchProfileId, setSelectedChildSearchProfileId] = useState('')
+  const [legacyAccountSelected, setLegacyAccountSelected] = useState(false)
   const [wizardStep, setWizardStep] = useState<WizardStep>(1)
   const [parentPhone, setParentPhone] = useState('')
   const [parentName, setParentName] = useState('')
@@ -471,7 +588,6 @@ function App() {
   const [, setPackageIntent] = useState<PackageIntent>(null)
   const [duplicateProfileAcknowledged, setDuplicateProfileAcknowledged] = useState(false)
   const [lookupPickerOpen, setLookupPickerOpen] = useState(false)
-  const [parentUpdateOpen, setParentUpdateOpen] = useState(false)
   const [parentUpdateName, setParentUpdateName] = useState('')
   const [parentUpdatePhone, setParentUpdatePhone] = useState('')
 
@@ -482,22 +598,26 @@ function App() {
   const hasContactOwnerDecision = !usesMappingDecision || contactOwner !== null
   const parentContactSelected = usesMappingDecision ? contactOwner === 'parent' : usesParentIdentity
   const parentLookupAccount = getLookupParentAccount(lookupState)
-  const parentUpdateState = parentLookupAccount ? getParentUpdateState(parentLookupAccount, parentUpdateName, parentUpdatePhone) : null
-  const parentUpdateBlocked = Boolean(parentUpdateState?.registeredToOtherParent)
   const selectedChildSearchProfile = childProfileSearchResults.find((profile) => profile.id === selectedChildSearchProfileId) ?? null
+  const isOldAccountOverlapLookup = lookupState === 'existing-old-account-with-child-profile-contact'
+  const selectedSearchParentAccount = selectedChildSearchProfile ? getParentAccountFromChildProfile(selectedChildSearchProfile) : null
+  const parentAccountForUpdate = parentLookupAccount ?? selectedSearchParentAccount
+  const parentUpdateState = parentAccountForUpdate ? getParentUpdateState(parentAccountForUpdate, parentUpdateName, parentUpdatePhone) : null
+  const parentUpdateBlocked = Boolean(parentUpdateState?.registeredToOtherParent)
   const selectedChildProfile = parentLookupAccount?.profiles.find((profile) => profile.id === selectedChildProfileId) ?? selectedChildSearchProfile
   const shouldCreateProfileForParent = Boolean(parentLookupAccount && profileTarget === 'new')
   const duplicateProfileMatches = parentLookupAccount && shouldCreateProfileForParent ? getDuplicateProfileMatches(parentLookupAccount.profiles, childName) : []
   const duplicateProfileBlocking = duplicateProfileMatches.length > 0 && !duplicateProfileAcknowledged
-  const searchProfileReady = Boolean(isSearchResolutionLookup(lookupState) && selectedChildSearchProfile)
-  const showMigrationForm = isExistingFlow && lookupState === 'existing-old-account' && hasContactOwnerDecision
+  const searchProfileReady = Boolean((isSearchResolutionLookup(lookupState) || isOldAccountOverlapLookup) && selectedChildSearchProfile)
+  const showMigrationForm = isExistingFlow && isOldAccountLookup(lookupState) && hasContactOwnerDecision && legacyAccountSelected
   const showNewAccountForm = accountStatus === 'new' && lookupState === 'new-available'
-  const effectiveParentPhone = parentLookupAccount ? parentUpdateState?.nextPhone ?? parentLookupAccount.phone : showNewAccountForm ? parentPhone || phone : parentContactSelected ? phone : parentPhone
-  const effectiveParentAccount = parentContactSelected || parentLookupAccount ? null : getRegisteredParentAccount(effectiveParentPhone)
-  const effectiveParentName = parentLookupAccount ? parentUpdateState?.nextName ?? parentLookupAccount.name : effectiveParentAccount?.name || parentName || ''
+  const effectiveParentPhone = parentAccountForUpdate ? parentUpdateState?.nextPhone ?? parentAccountForUpdate.phone : showNewAccountForm ? parentPhone || phone : parentContactSelected ? phone : parentPhone
+  const effectiveParentAccount = parentContactSelected || parentAccountForUpdate ? null : getRegisteredParentAccount(effectiveParentPhone)
+  const effectiveParentName = parentAccountForUpdate ? parentUpdateState?.nextName ?? parentAccountForUpdate.name : effectiveParentAccount?.name || parentName || ''
   const effectiveChildName = selectedChildProfile?.name ?? childName
-  const parentDataReady = Boolean(canCheckParentPhone(effectiveParentPhone) && effectiveParentName.trim())
+  const parentDataReady = Boolean(canCheckParentPhone(effectiveParentPhone))
   const multipleMatchReady = Boolean(lookupState === 'existing-multiple-matches' && selectedChildSearchProfile)
+  const oldAccountOverlapReady = Boolean(isOldAccountOverlapLookup && (selectedChildSearchProfile || legacyAccountSelected))
   const childProfileFormReady = Boolean(childName.trim() && grade)
   const childDataReady = Boolean(effectiveChildName.trim() && (selectedChildProfile ? true : grade))
   const parentProfileTargetReady = Boolean(
@@ -509,13 +629,13 @@ function App() {
   const newAccountFormReady = Boolean(
     showNewAccountForm
     && canCheckParentPhone(effectiveParentPhone)
-    && parentName.trim()
     && childName.trim()
     && grade,
   )
-  const invoiceDetailReady = Boolean(searchProfileReady || parentProfileTargetReady || migrationFormReady || newAccountFormReady)
+  const invoiceDetailReady = Boolean(parentProfileTargetReady || migrationFormReady || newAccountFormReady)
   const dynamicWizardSteps = getDynamicWizardSteps({
     accountStatus,
+    legacyAccountSelected,
     lookupState,
     profileTarget,
     selectedChildProfileId,
@@ -527,12 +647,21 @@ function App() {
   const cta = useMemo(() => {
     if (isOptionThree) {
       if (wizardStep === 1) {
-        if (lookupState === 'existing-old-account') return { label: 'Lanjut ke Mapping', disabled: false }
-        if (isParentProfileLookup(lookupState)) return { label: 'Lanjut Pilih Profil', disabled: false }
-        if (lookupState === 'existing-child-profile-contact') return { label: selectedChildSearchProfile ? 'Review Tujuan Paket' : 'Pilih Child', disabled: !searchProfileReady }
-        if (lookupState === 'existing-child-profiles-same-parent' || lookupState === 'existing-child-profiles-cross-parent') return { label: selectedChildSearchProfile ? 'Review Tujuan Paket' : 'Pilih Child', disabled: !searchProfileReady }
-        if (lookupState === 'existing-multiple-matches') return { label: selectedChildSearchProfile ? 'Review Tujuan Paket' : 'Pilih Hasil Pencarian', disabled: !multipleMatchReady }
-        if (accountStatus === 'new' && lookupState === 'new-available') return { label: 'Lanjut Isi Data Parent', disabled: false }
+        if (isOldAccountOverlapLookup) {
+          if (selectedChildSearchProfile) return { label: 'Review Tujuan Paket', disabled: parentUpdateBlocked }
+          if (legacyAccountSelected) return { label: 'Lanjut ke Mapping', disabled: false }
+          return { label: 'Pilih Tujuan Paket', disabled: true }
+        }
+        if (isOldAccountLookup(lookupState)) return { label: legacyAccountSelected ? 'Lanjut ke Mapping' : 'Pilih Akun Lama', disabled: !legacyAccountSelected }
+        if (isParentProfileLookup(lookupState)) {
+          if (profileTarget === 'existing' && selectedChildProfile) return { label: 'Review Tujuan Paket', disabled: parentUpdateBlocked }
+          if (profileTarget === 'new') return { label: 'Lanjut Isi Anak', disabled: false }
+          return { label: 'Pilih Tujuan Paket', disabled: true }
+        }
+        if (lookupState === 'existing-child-profile-contact') return { label: selectedChildSearchProfile ? 'Review Tujuan Paket' : 'Pilih Anak', disabled: !searchProfileReady || parentUpdateBlocked }
+        if (lookupState === 'existing-child-profiles-same-parent' || lookupState === 'existing-child-profiles-cross-parent') return { label: selectedChildSearchProfile ? 'Review Tujuan Paket' : 'Pilih Anak', disabled: !searchProfileReady || parentUpdateBlocked }
+        if (lookupState === 'existing-multiple-matches') return { label: selectedChildSearchProfile ? 'Review Tujuan Paket' : 'Pilih Hasil Pencarian', disabled: !multipleMatchReady || parentUpdateBlocked }
+        if (accountStatus === 'new' && lookupState === 'new-available') return { label: 'Lanjut Isi Data Orang Tua', disabled: false }
         if (lookupState === 'existing-not-registered' || lookupState === 'existing-child-phone' || lookupState === 'new-registered') {
           return { label: 'Ikuti Instruksi', disabled: true }
         }
@@ -541,12 +670,12 @@ function App() {
       }
 
       if (wizardStep === 2 && parentLookupAccount) {
-        if (profileTarget === 'existing') return { label: 'Review Tujuan Paket', disabled: !selectedChildProfile }
-        if (profileTarget === 'new') return { label: 'Lanjut Isi Child', disabled: false }
+        if (profileTarget === 'existing') return { label: 'Review Tujuan Paket', disabled: !selectedChildProfile || parentUpdateBlocked }
+        if (profileTarget === 'new') return { label: 'Lanjut Isi Anak', disabled: false }
         return { label: 'Pilih Profil Tujuan', disabled: true }
       }
-      if (wizardStep === 2) return { label: 'Lanjut Isi Data Parent', disabled: contactOwner === null }
-      if (wizardStep === 3) return { label: 'Lanjut Isi Child', disabled: !parentDataReady }
+      if (wizardStep === 2) return { label: 'Lanjut Isi Data Orang Tua', disabled: contactOwner === null }
+      if (wizardStep === 3) return { label: 'Lanjut Isi Anak', disabled: !parentDataReady }
       if (wizardStep === 4) return { label: parentLookupAccount ? (duplicateProfileBlocking ? 'Cek Profil Mirip' : 'Review Tujuan Paket') : 'Review Migrasi', disabled: parentLookupAccount ? !childProfileFormReady || duplicateProfileBlocking : !childDataReady }
       return { label: 'Lanjut Pilih Metode Bayar', disabled: !consent }
     }
@@ -558,18 +687,24 @@ function App() {
     if (lookupState === 'idle') return { label: 'Cek Akun Dulu', disabled: true }
     if (lookupState === 'existing-not-registered' || lookupState === 'existing-child-phone') return { label: 'Ikuti Instruksi', disabled: true }
     if (lookupState === 'existing-child-profile-contact') {
-      return { label: selectedChildSearchProfile ? 'Review' : 'Pilih Child', disabled: !searchProfileReady }
+      return { label: selectedChildSearchProfile ? 'Review' : 'Pilih Anak', disabled: !searchProfileReady || parentUpdateBlocked }
     }
     if (lookupState === 'existing-child-profiles-same-parent' || lookupState === 'existing-child-profiles-cross-parent') {
-      return { label: selectedChildSearchProfile ? 'Review' : 'Pilih Child', disabled: !searchProfileReady }
+      return { label: selectedChildSearchProfile ? 'Review' : 'Pilih Anak', disabled: !searchProfileReady || parentUpdateBlocked }
     }
     if (lookupState === 'existing-multiple-matches') {
-      return { label: selectedChildSearchProfile ? 'Review' : 'Pilih Hasil Pencarian', disabled: !multipleMatchReady }
+      return { label: selectedChildSearchProfile ? 'Review' : 'Pilih Hasil Pencarian', disabled: !multipleMatchReady || parentUpdateBlocked }
+    }
+    if (isOldAccountOverlapLookup) {
+      if (selectedChildSearchProfile) return { label: 'Review', disabled: parentUpdateBlocked }
+      if (legacyAccountSelected) return { label: migrationFormReady ? 'Review' : 'Lengkapi Data Migrasi', disabled: !migrationFormReady }
+      return { label: 'Pilih Tujuan Paket', disabled: true }
     }
     if (parentLookupAccount) {
       return { label: parentProfileTargetReady ? 'Review' : duplicateProfileBlocking ? 'Cek Profil Mirip' : 'Tentukan Profil Tujuan', disabled: !parentProfileTargetReady }
     }
-    if (lookupState === 'existing-old-account') {
+    if (isOldAccountLookup(lookupState)) {
+      if (!legacyAccountSelected) return { label: 'Pilih Akun Lama', disabled: true }
       if (usesMappingDecision && contactOwner === null) {
         return { label: isOptionThree ? 'Pilih Posisi Data' : 'Pilih Pemilik Kontak', disabled: true }
       }
@@ -577,19 +712,20 @@ function App() {
       return { label: migrationFormReady ? 'Review' : 'Lengkapi Data Migrasi', disabled: !migrationFormReady }
     }
     return { label: 'Pilih Status Akun', disabled: true }
-  }, [accountStatus, childDataReady, childProfileFormReady, consent, contactOwner, duplicateProfileBlocking, isOptionThree, lookupState, migrationFormReady, multipleMatchReady, newAccountFormReady, parentDataReady, parentLookupAccount, parentProfileTargetReady, profileTarget, searchProfileReady, selectedChildProfile, selectedChildSearchProfile, usesMappingDecision, wizardStep])
+  }, [accountStatus, childDataReady, childProfileFormReady, consent, contactOwner, duplicateProfileBlocking, isOldAccountOverlapLookup, isOptionThree, legacyAccountSelected, lookupState, migrationFormReady, multipleMatchReady, newAccountFormReady, parentDataReady, parentLookupAccount, parentProfileTargetReady, profileTarget, searchProfileReady, selectedChildProfile, selectedChildSearchProfile, usesMappingDecision, wizardStep, parentUpdateBlocked])
 
   const disabledReason = (() => {
     if (!cta.disabled || isOptionThree) return null
     if (!accountStatus) return 'Pilih status akun customer'
-    if (lookupState === 'idle') return 'Input email, no. HP, atau user serial lalu cek akun'
+    if (lookupState === 'idle') return 'Input No. HP atau user serial lalu cek akun'
     if (lookupState === 'existing-not-registered' || lookupState === 'existing-child-phone' || lookupState === 'new-registered') return 'Ikuti instruksi pada hasil pencarian'
-    if (isSearchResolutionLookup(lookupState) && !selectedChildSearchProfile) return 'Pilih Child tujuan paket'
-    if (parentUpdateBlocked) return 'Periksa No. HP Parent yang akan diperbarui'
+    if (isOldAccountOverlapLookup && !oldAccountOverlapReady) return 'Pilih akun lama atau Anak tujuan paket'
+    if (isSearchResolutionLookup(lookupState) && !selectedChildSearchProfile) return 'Pilih Anak tujuan paket'
+    if (parentUpdateBlocked) return 'Periksa No. HP Orang Tua yang akan diperbarui'
     if (parentLookupAccount && duplicateProfileBlocking) return 'Cek profil mirip sebelum lanjut'
-    if (parentLookupAccount && !parentProfileTargetReady) return 'Tentukan Child tujuan paket'
-    if (lookupState === 'existing-old-account' && !migrationFormReady) return 'Lengkapi data Parent dan Child'
-    if (accountStatus === 'new' && !newAccountFormReady) return 'Lengkapi data Parent dan Child baru'
+    if (parentLookupAccount && !parentProfileTargetReady) return 'Tentukan Anak tujuan paket'
+    if (isOldAccountLookup(lookupState) && !migrationFormReady) return 'Lengkapi data Orang Tua dan Anak'
+    if (accountStatus === 'new' && !newAccountFormReady) return 'Lengkapi data Orang Tua dan Anak baru'
     return cta.label
   })()
 
@@ -602,6 +738,7 @@ function App() {
     setProfileTarget(null)
     setSelectedChildProfileId('')
     setSelectedChildSearchProfileId('')
+    setLegacyAccountSelected(false)
     setParentPhone('')
     setParentName('')
     setChildName('')
@@ -624,6 +761,7 @@ function App() {
     setProfileTarget(null)
     setSelectedChildProfileId('')
     setSelectedChildSearchProfileId('')
+    setLegacyAccountSelected(false)
     setWizardStep(1)
     setParentPhone('')
     setParentName('')
@@ -637,6 +775,58 @@ function App() {
     setPackageIntent(null)
     setDuplicateProfileAcknowledged(false)
     setLookupPickerOpen(false)
+  }
+
+  const prefillLegacyChildData = () => {
+    setChildName(existingAccount.name)
+    setChildPhone(phone)
+    setChildEmail(existingAccount.email)
+  }
+
+  const clearLegacyChildData = () => {
+    setChildName('')
+    setChildPhone('')
+    setChildEmail('')
+  }
+
+  const handleLegacyAccountSelectedChange = (value: boolean) => {
+    setLegacyAccountSelected(value)
+    if (!value) return
+
+    if (usesParentIdentity || contactOwner === 'parent') {
+      clearLegacyChildData()
+      return
+    }
+
+    prefillLegacyChildData()
+  }
+
+  const handleUsesParentIdentityChange = (value: boolean) => {
+    setUsesParentIdentity(value)
+
+    if (!isOldAccountLookup(lookupState) || !legacyAccountSelected) return
+
+    if (value) {
+      clearLegacyChildData()
+      setParentPhone(phone)
+      return
+    }
+
+    if (normalizePhoneDigits(parentPhone) === normalizePhoneDigits(phone)) setParentPhone('')
+    prefillLegacyChildData()
+  }
+
+  const handleContactOwnerChange = (value: ContactOwner) => {
+    setContactOwner(value)
+
+    if (!isOldAccountLookup(lookupState) || !legacyAccountSelected) return
+
+    if (value === 'parent') {
+      clearLegacyChildData()
+      return
+    }
+
+    if (value === 'child') prefillLegacyChildData()
   }
 
   const handleChildNameChange = (value: string) => {
@@ -658,6 +848,7 @@ function App() {
 
   const handleSelectedChildSearchProfileIdChange = (value: string) => {
     setSelectedChildSearchProfileId(value)
+    setLegacyAccountSelected(false)
     setPackageIntent(null)
   }
 
@@ -677,11 +868,11 @@ function App() {
     setProfileTarget(null)
     setSelectedChildProfileId('')
     setSelectedChildSearchProfileId('')
+    setLegacyAccountSelected(false)
     setConsent(false)
     setPackageIntent(null)
     setDuplicateProfileAcknowledged(false)
     setLookupPickerOpen(false)
-    setParentUpdateOpen(false)
     setParentUpdateName('')
     setParentUpdatePhone('')
 
@@ -691,6 +882,18 @@ function App() {
     }
 
     if (accountStatus === 'existing') {
+      if (serialMatchesInput(existingAccount.serial, phone)) {
+        setLookupState('existing-old-account')
+        setLookupPickerOpen(true)
+        return
+      }
+
+      if (isOldAccountWithChildProfileContactInput(phone)) {
+        setLookupState('existing-old-account-with-child-profile-contact')
+        setLookupPickerOpen(true)
+        return
+      }
+
       if (isMultipleMatchInput(phone)) {
         setLookupState('existing-multiple-matches')
         setLookupPickerOpen(true)
@@ -711,40 +914,48 @@ function App() {
 
       if (isChildProfileLookupInput(phone)) {
         setLookupState('existing-child-profile-contact')
-        setSelectedChildSearchProfileId(singleChildProfileSearchResults[0]?.id ?? '')
         setLookupPickerOpen(true)
         return
       }
 
       if (isParentAccountWithSingleChildPhone(phone)) {
         setLookupState('existing-parent-single-child')
-        setProfileTarget('existing')
-        setSelectedChildProfileId(parentAccountWithSingleChild.profiles[0]?.id ?? '')
+        setLookupPickerOpen(true)
         return
       }
 
       if (isParentAccountWithChildrenPhone(phone)) {
         setLookupState('existing-parent-with-children')
+        setLookupPickerOpen(true)
         return
       }
 
       if (isParentAccountWithoutChildrenPhone(phone)) {
         setLookupState('existing-parent-empty')
-        setProfileTarget('new')
+        setLookupPickerOpen(true)
         return
       }
 
-      if (normalizedPhone === '089900001234' || normalizedPhone.includes('90001234')) {
+      if (normalizedPhone === '089900001234' || normalizedPhone.includes('90001234') || isSerialLookupInput(phone)) {
         setLookupState('existing-not-registered')
+        setLookupPickerOpen(true)
         return
       }
 
       setLookupState('existing-old-account')
+      setLookupPickerOpen(true)
+      return
+    }
+
+    if (isSerialLookupInput(phone)) {
+      setLookupState('new-registered')
+      setLookupPickerOpen(true)
       return
     }
 
     if (isChildProfileContact(phone)) {
       setLookupState('new-available')
+      setLookupPickerOpen(true)
       return
     }
 
@@ -755,10 +966,12 @@ function App() {
       || isParentAccountWithoutChildrenPhone(phone)
     ) {
       setLookupState('new-registered')
+      setLookupPickerOpen(true)
       return
     }
 
     setLookupState('new-available')
+    setLookupPickerOpen(true)
   }
 
   const handleBottomCtaClick = () => {
@@ -768,8 +981,13 @@ function App() {
     }
 
     if (wizardStep === 1) {
-      if (searchProfileReady) {
+      if (searchProfileReady || (parentLookupAccount && profileTarget === 'existing' && selectedChildProfile)) {
         setWizardStep(5)
+        return
+      }
+
+      if (parentLookupAccount && profileTarget === 'new') {
+        setWizardStep(4)
         return
       }
 
@@ -806,6 +1024,8 @@ function App() {
 
         <div className="content-stack">
           {!isOptionThree && <OrderCard compact={!invoiceDetailReady} />}
+          <DiscountCard />
+          <PaymentDetailCard />
           {prototypeOption === '1' || prototypeOption === '2' || prototypeOption === '3' ? (
             <PurchasePurposeCard
               accountStatus={accountStatus}
@@ -818,6 +1038,7 @@ function App() {
               duplicateProfileMatches={duplicateProfileMatches}
               isBeforeAfterMapping={isOptionThree}
               isExplicitMapping={isOptionTwo}
+              legacyAccountSelected={legacyAccountSelected}
               lookupState={lookupState}
               lookupPickerOpen={lookupPickerOpen}
               setWizardStep={setWizardStep}
@@ -831,28 +1052,25 @@ function App() {
               parentName={parentName}
               parentPhone={parentPhone}
               parentUpdateName={parentUpdateName}
-              parentUpdateOpen={parentUpdateOpen}
-              parentUpdatePhone={parentUpdatePhone}
+                parentUpdatePhone={parentUpdatePhone}
               phone={phone}
               setAccountStatus={handleAccountStatusChange}
               setChildEmail={setChildEmail}
               setConsent={setConsent}
               setChildName={handleChildNameChange}
               setChildPhone={setChildPhone}
-              setContactOwner={setContactOwner}
+              setContactOwner={handleContactOwnerChange}
               setGrade={setGrade}
-              setParentName={setParentName}
+              setLegacyAccountSelected={handleLegacyAccountSelectedChange}
               setParentPhone={setParentPhone}
-              setParentUpdateName={setParentUpdateName}
-              setParentUpdateOpen={setParentUpdateOpen}
-              setParentUpdatePhone={setParentUpdatePhone}
+                setParentUpdatePhone={setParentUpdatePhone}
               setPhone={setPhone}
               setProfileTarget={handleProfileTargetChange}
               setSelectedChildProfileId={handleSelectedChildProfileIdChange}
               setSelectedChildSearchProfileId={handleSelectedChildSearchProfileIdChange}
               setDuplicateProfileAcknowledged={setDuplicateProfileAcknowledged}
               setPackageIntent={setPackageIntent}
-              setUsesParentIdentity={setUsesParentIdentity}
+              setUsesParentIdentity={handleUsesParentIdentityChange}
               showMigrationForm={showMigrationForm}
               showNewAccountForm={showNewAccountForm}
               usesParentIdentity={parentContactSelected}
@@ -861,8 +1079,6 @@ function App() {
           ) : (
             <PrototypeConceptCard option={prototypeOptions.find((option) => option.id === prototypeOption) ?? prototypeOptions[0]} />
           )}
-          {!isOptionThree && invoiceDetailReady && <DiscountCard />}
-          {!isOptionThree && invoiceDetailReady && <PaymentDetailCard />}
         </div>
 
         <BottomCta
@@ -987,8 +1203,8 @@ function OrderCard({ compact = false }: { compact?: boolean }) {
           </div>
         </FieldBlock>
       )}
-      {compact && <small className="compact-invoice-note">Detail invoice dibuka setelah tujuan paket dipilih.</small>}
-      <PriceLine />
+      {compact && <small className="compact-invoice-note">Kode diskon dan ringkasan pembayaran bisa disiapkan sebelum review.</small>}
+      {!compact && <PriceLine />}
     </SectionCard>
   )
 }
@@ -1055,12 +1271,12 @@ function PurchasePurposeCard({
   grade,
   isBeforeAfterMapping,
   isExplicitMapping,
+  legacyAccountSelected,
   lookupState,
   lookupPickerOpen,
   parentName,
   parentPhone,
   parentUpdateName,
-  parentUpdateOpen,
   parentUpdatePhone,
   phone,
   profileTarget,
@@ -1074,12 +1290,10 @@ function PurchasePurposeCard({
   setContactOwner,
   setDuplicateProfileAcknowledged,
   setGrade,
+  setLegacyAccountSelected,
   setLookupState,
   setLookupPickerOpen,
-  setParentName,
   setParentPhone,
-  setParentUpdateName,
-  setParentUpdateOpen,
   setParentUpdatePhone,
   setPhone,
   setPackageIntent,
@@ -1094,6 +1308,9 @@ function PurchasePurposeCard({
   wizardStep,
 }: PurchasePurposeCardProps) {
   const parentLookupAccount = getLookupParentAccount(lookupState)
+  const selectedChildSearchProfile = childProfileSearchResults.find((profile) => profile.id === selectedChildSearchProfileId) ?? null
+  const selectedSearchParentAccount = selectedChildSearchProfile ? getParentAccountFromChildProfile(selectedChildSearchProfile) : null
+  const parentLookupSelectionReady = Boolean(parentLookupAccount && (profileTarget === 'new' || (profileTarget === 'existing' && selectedChildProfileId)))
 
   if (isBeforeAfterMapping) {
     return (
@@ -1109,12 +1326,12 @@ function PurchasePurposeCard({
           grade={grade}
           duplicateProfileAcknowledged={duplicateProfileAcknowledged}
           duplicateProfileMatches={duplicateProfileMatches}
+          legacyAccountSelected={legacyAccountSelected}
           lookupState={lookupState}
           lookupPickerOpen={lookupPickerOpen}
           parentName={parentName}
           parentPhone={parentPhone}
           parentUpdateName={parentUpdateName}
-          parentUpdateOpen={parentUpdateOpen}
           parentUpdatePhone={parentUpdatePhone}
           phone={phone}
           profileTarget={profileTarget}
@@ -1128,12 +1345,10 @@ function PurchasePurposeCard({
           setContactOwner={setContactOwner}
           setDuplicateProfileAcknowledged={setDuplicateProfileAcknowledged}
           setGrade={setGrade}
+          setLegacyAccountSelected={setLegacyAccountSelected}
           setLookupState={setLookupState}
           setLookupPickerOpen={setLookupPickerOpen}
-          setParentName={setParentName}
           setParentPhone={setParentPhone}
-          setParentUpdateName={setParentUpdateName}
-          setParentUpdateOpen={setParentUpdateOpen}
           setParentUpdatePhone={setParentUpdatePhone}
           setPhone={setPhone}
           setPackageIntent={setPackageIntent}
@@ -1169,8 +1384,13 @@ function PurchasePurposeCard({
       <LookupStage
         accountStatus={accountStatus}
         checkNumber={checkNumber}
+        legacyAccountSelected={legacyAccountSelected}
         lookupState={lookupState}
         lookupPickerOpen={lookupPickerOpen}
+        parentUpdateName={parentUpdateName}
+        parentUpdatePhone={parentUpdatePhone}
+        profileTarget={profileTarget}
+        selectedChildProfileId={selectedChildProfileId}
         selectedChildSearchProfileId={selectedChildSearchProfileId}
         phone={phone}
         setAccountStatus={setAccountStatus}
@@ -1178,6 +1398,7 @@ function PurchasePurposeCard({
         isBeforeAfterMapping={false}
         isExplicitMapping={isExplicitMapping}
         setContactOwner={setContactOwner}
+        setLegacyAccountSelected={setLegacyAccountSelected}
         setLookupState={setLookupState}
         setLookupPickerOpen={setLookupPickerOpen}
         setPhone={setPhone}
@@ -1185,11 +1406,21 @@ function PurchasePurposeCard({
         setSelectedChildProfileId={setSelectedChildProfileId}
         setSelectedChildSearchProfileId={setSelectedChildSearchProfileId}
         setPackageIntent={setPackageIntent}
-        setUsesParentIdentity={setUsesParentIdentity}
-        usesParentIdentity={usesParentIdentity}
       />
 
-      {parentLookupAccount && (
+      {selectedSearchParentAccount && selectedChildSearchProfile && (
+        <StagePanel className="form-stage" step="TAHAP 3" title="Lengkapi Data Orang Tua">
+          <SelectedChildAccountStage
+            account={selectedSearchParentAccount}
+            profile={selectedChildSearchProfile}
+            parentUpdateName={parentUpdateName}
+            parentUpdatePhone={parentUpdatePhone}
+            setParentUpdatePhone={setParentUpdatePhone}
+          />
+        </StagePanel>
+      )}
+
+      {parentLookupAccount && parentLookupSelectionReady && (
         <StagePanel className="form-stage" step="TAHAP 3" title="Profil Tujuan Aktivasi Paket">
           <ProfileTargetStage
             account={parentLookupAccount}
@@ -1198,7 +1429,6 @@ function PurchasePurposeCard({
             childPhone={childPhone}
             grade={grade}
             parentUpdateName={parentUpdateName}
-            parentUpdateOpen={parentUpdateOpen}
             parentUpdatePhone={parentUpdatePhone}
             profileTarget={profileTarget}
             selectedChildProfileId={selectedChildProfileId}
@@ -1210,8 +1440,6 @@ function PurchasePurposeCard({
             setGrade={setGrade}
             setDuplicateProfileAcknowledged={setDuplicateProfileAcknowledged}
             setPackageIntent={setPackageIntent}
-            setParentUpdateName={setParentUpdateName}
-            setParentUpdateOpen={setParentUpdateOpen}
             setParentUpdatePhone={setParentUpdatePhone}
             setProfileTarget={setProfileTarget}
             setSelectedChildProfileId={setSelectedChildProfileId}
@@ -1221,38 +1449,28 @@ function PurchasePurposeCard({
 
       {showMigrationForm && (
         <>
-          {!isExplicitMapping && (
-            <Callout variant="warning">
-              <strong>{usesParentIdentity ? 'Kontak akun lama milik orang tua' : 'Kontak akun lama milik anak'}</strong>
-              <PointList items={usesParentIdentity ? [
-                'No. HP akun lama hanya dipakai untuk mengenali akun saat ini.',
-                'Isi ulang Data Parent dan Child sesuai data dari pembeli.',
-                'Login anak berubah ke Username dan PIN.',
-              ] : [
-                'Akun aktif dikonversi menjadi struktur baru.',
-                'Isi Data Parent dan Child sesuai data dari pembeli.',
-                'Login anak berubah ke Username dan PIN.',
-              ]} />
-            </Callout>
-          )}
-
           {isExplicitMapping && contactOwner && <MigrationStateSummary contactOwner={contactOwner} phone={phone} />}
 
-          <StagePanel className="form-stage" step="TAHAP 3" title="Lengkapi Data Parent dan Child">
+          <StagePanel className="form-stage" step="TAHAP 3" title="Lengkapi Data Orang Tua dan Anak">
             <AccountForm
               childEmail={childEmail}
               childName={childName}
               childPhone={childPhone}
               grade={grade}
               mode="migration"
-              parentName={parentName}
-              parentPhone={usesParentIdentity ? phone : parentPhone}
+              migrationIdentityToggle={!isExplicitMapping ? (
+                <MigrationIdentityToggle
+                  checked={usesParentIdentity}
+                  onChange={() => setUsesParentIdentity(!usesParentIdentity)}
+                />
+              ) : undefined}
+              parentPhone={usesParentIdentity ? parentPhone || phone : parentPhone}
+              prefilledParentPhone={phone}
               usesParentIdentity={usesParentIdentity}
               setChildEmail={setChildEmail}
               setChildName={setChildName}
               setChildPhone={setChildPhone}
               setGrade={setGrade}
-              setParentName={setParentName}
               setParentPhone={setParentPhone}
             />
           </StagePanel>
@@ -1260,21 +1478,19 @@ function PurchasePurposeCard({
       )}
 
       {showNewAccountForm && (
-        <StagePanel className="form-stage" step="TAHAP 3" title="Buat Parent dan Child">
+        <StagePanel className="form-stage" step="TAHAP 3" title="Buat Orang Tua dan Anak">
           <AccountForm
             childEmail={childEmail}
             childName={childName}
             childPhone={childPhone}
             grade={grade}
             mode="new"
-            parentName={parentName}
             parentPhone={parentPhone || phone}
             usesParentIdentity={false}
             setChildEmail={setChildEmail}
             setChildName={setChildName}
             setChildPhone={setChildPhone}
             setGrade={setGrade}
-            setParentName={setParentName}
             setParentPhone={setParentPhone}
           />
         </StagePanel>
@@ -1294,12 +1510,12 @@ function OptionThreeWizard({
   duplicateProfileAcknowledged,
   duplicateProfileMatches,
   grade,
+  legacyAccountSelected,
   lookupState,
   lookupPickerOpen,
   parentName,
   parentPhone,
   parentUpdateName,
-  parentUpdateOpen,
   parentUpdatePhone,
   phone,
   profileTarget,
@@ -1313,12 +1529,10 @@ function OptionThreeWizard({
   setContactOwner,
   setDuplicateProfileAcknowledged,
   setGrade,
+  setLegacyAccountSelected,
   setLookupState,
   setLookupPickerOpen,
-  setParentName,
   setParentPhone,
-  setParentUpdateName,
-  setParentUpdateOpen,
   setParentUpdatePhone,
   setPhone,
   setPackageIntent,
@@ -1333,11 +1547,17 @@ function OptionThreeWizard({
   const goBack = () => setWizardStep(Math.max(1, wizardStep - 1) as WizardStep)
   const isNewAccount = accountStatus === 'new' && showNewAccountForm
   const parentLookupAccount = getLookupParentAccount(lookupState)
+  const selectedSearchProfile = childProfileSearchResults.find((profile) => profile.id === selectedChildSearchProfileId) ?? null
+  const parentAccountForUpdate = parentLookupAccount ?? (selectedSearchProfile ? getParentAccountFromChildProfile(selectedSearchProfile) : null)
+  const parentUpdateState = parentAccountForUpdate ? getParentUpdateState(parentAccountForUpdate, parentUpdateName, parentUpdatePhone) : null
+  const wizardParentName = parentAccountForUpdate ? parentUpdateState?.nextName ?? parentAccountForUpdate.name : parentName
+  const wizardParentPhone = parentAccountForUpdate ? parentUpdateState?.nextPhone ?? parentAccountForUpdate.phone : parentLookupAccount?.phone ?? (usesParentIdentity ? phone : parentPhone)
 
   return (
     <>
       <MigrationStageStepper
         accountStatus={accountStatus}
+        legacyAccountSelected={legacyAccountSelected}
         lookupState={lookupState}
         profileTarget={profileTarget}
         selectedChildProfileId={selectedChildProfileId}
@@ -1350,13 +1570,20 @@ function OptionThreeWizard({
         <WizardLookupStep
           accountStatus={accountStatus}
           checkNumber={checkNumber}
+          legacyAccountSelected={legacyAccountSelected}
           lookupState={lookupState}
           lookupPickerOpen={lookupPickerOpen}
+          parentUpdateName={parentUpdateName}
+          parentUpdatePhone={parentUpdatePhone}
           phone={phone}
+          profileTarget={profileTarget}
+          selectedChildProfileId={selectedChildProfileId}
           selectedChildSearchProfileId={selectedChildSearchProfileId}
           setAccountStatus={setAccountStatus}
+          setLegacyAccountSelected={setLegacyAccountSelected}
           setLookupState={setLookupState}
           setLookupPickerOpen={setLookupPickerOpen}
+          setParentUpdatePhone={setParentUpdatePhone}
           setPhone={setPhone}
           setPackageIntent={setPackageIntent}
           setProfileTarget={setProfileTarget}
@@ -1375,7 +1602,6 @@ function OptionThreeWizard({
               childPhone={childPhone}
               grade={grade}
               parentUpdateName={parentUpdateName}
-              parentUpdateOpen={parentUpdateOpen}
               parentUpdatePhone={parentUpdatePhone}
               duplicateProfileAcknowledged={duplicateProfileAcknowledged}
               duplicateProfileMatches={duplicateProfileMatches}
@@ -1387,8 +1613,6 @@ function OptionThreeWizard({
               setGrade={setGrade}
               setDuplicateProfileAcknowledged={setDuplicateProfileAcknowledged}
               setPackageIntent={setPackageIntent}
-              setParentUpdateName={setParentUpdateName}
-              setParentUpdateOpen={setParentUpdateOpen}
               setParentUpdatePhone={setParentUpdatePhone}
               setProfileTarget={setProfileTarget}
               setSelectedChildProfileId={setSelectedChildProfileId}
@@ -1400,12 +1624,10 @@ function OptionThreeWizard({
       )}
 
       {wizardStep === 3 && (
-        <StagePanel className="form-stage" step="STEP 3" title={isNewAccount ? 'Buat Parent' : 'Lengkapi Data Parent'}>
+        <StagePanel className="form-stage" step="STEP 3" title={isNewAccount ? 'Buat Orang Tua' : 'Lengkapi Data Orang Tua'}>
           <ParentDataStep
             mode={isNewAccount ? 'new' : 'migration'}
-            parentName={parentName}
-            parentPhone={usesParentIdentity ? phone : parentPhone}
-            setParentName={setParentName}
+            parentPhone={usesParentIdentity ? parentPhone || phone : parentPhone}
             setParentPhone={setParentPhone}
             usesParentIdentity={usesParentIdentity}
           />
@@ -1413,7 +1635,7 @@ function OptionThreeWizard({
       )}
 
       {wizardStep === 4 && (
-        <StagePanel className="form-stage" step="STEP 4" title={parentLookupAccount ? 'Buat Child Baru' : 'Lengkapi Child'}>
+        <StagePanel className="form-stage" step="STEP 4" title={parentLookupAccount ? 'Buat Anak Baru' : 'Lengkapi Anak'}>
           {parentLookupAccount ? (
             <>
               <NewChildProfileForm
@@ -1445,7 +1667,6 @@ function OptionThreeWizard({
               childName={childName}
               childPhone={childPhone}
               grade={grade}
-              isMigration={!isNewAccount}
               setChildEmail={setChildEmail}
               setChildName={setChildName}
               setChildPhone={setChildPhone}
@@ -1463,8 +1684,8 @@ function OptionThreeWizard({
             consent={consent}
             grade={grade}
             parentAccount={parentLookupAccount}
-            parentName={parentName}
-            parentPhone={parentLookupAccount?.phone ?? (usesParentIdentity ? phone : parentPhone)}
+            parentName={wizardParentName}
+            parentPhone={wizardParentPhone}
             phone={phone}
             profileTarget={profileTarget}
             selectedChildProfileId={selectedChildProfileId}
@@ -1488,12 +1709,12 @@ type PurchasePurposeCardProps = {
   duplicateProfileAcknowledged: boolean
   duplicateProfileMatches: ChildProfile[]
   grade: string
+  legacyAccountSelected: boolean
   lookupState: LookupState
   lookupPickerOpen: boolean
   parentName: string
   parentPhone: string
   parentUpdateName: string
-  parentUpdateOpen: boolean
   parentUpdatePhone: string
   phone: string
   profileTarget: ProfileTarget
@@ -1506,20 +1727,18 @@ type PurchasePurposeCardProps = {
   setConsent: (value: boolean) => void
   setDuplicateProfileAcknowledged: (value: boolean) => void
   setGrade: (value: string) => void
-  setParentName: (value: string) => void
+  setLegacyAccountSelected: (value: boolean) => void
   setParentPhone: (value: string) => void
-  setParentUpdateName: (value: string) => void
-  setParentUpdateOpen: (value: boolean) => void
   setParentUpdatePhone: (value: string) => void
   setPhone: (value: string) => void
   setPackageIntent: (value: PackageIntent) => void
   setProfileTarget: (value: ProfileTarget) => void
   setSelectedChildProfileId: (value: string) => void
   setSelectedChildSearchProfileId: (value: string) => void
+  setUsesParentIdentity: (value: boolean) => void
   setLookupState: (value: LookupState) => void
   setLookupPickerOpen: (value: boolean) => void
   setContactOwner: (value: ContactOwner) => void
-  setUsesParentIdentity: (value: boolean) => void
   setWizardStep: (value: WizardStep) => void
   showMigrationForm: boolean
   showNewAccountForm: boolean
@@ -1536,6 +1755,7 @@ type StepperState = 'active' | 'done' | 'pending'
 
 type WizardStepperContext = {
   accountStatus: AccountStatus | null
+  legacyAccountSelected: boolean
   lookupState: LookupState
   profileTarget: ProfileTarget
   selectedChildProfileId: string
@@ -1543,10 +1763,10 @@ type WizardStepperContext = {
   wizardStep: WizardStep
 }
 
-function getDynamicWizardSteps({ accountStatus, lookupState, profileTarget, selectedChildProfileId, selectedChildSearchProfileId }: WizardStepperContext): Array<{ id: WizardStep; label: string }> {
+function getDynamicWizardSteps({ accountStatus, legacyAccountSelected, lookupState, profileTarget, selectedChildProfileId, selectedChildSearchProfileId }: WizardStepperContext): Array<{ id: WizardStep; label: string }> {
   const hasLookupResult = lookupState !== 'idle'
   const parentLookupAccount = getLookupParentAccount(lookupState)
-  const hasSearchProfile = isSearchResolutionLookup(lookupState) && Boolean(selectedChildSearchProfileId)
+  const hasSearchProfile = (isSearchResolutionLookup(lookupState) || lookupState === 'existing-old-account-with-child-profile-contact') && Boolean(selectedChildSearchProfileId)
 
   if (!accountStatus || !hasLookupResult) {
     return [{ id: 1, label: 'Cari' }]
@@ -1572,7 +1792,7 @@ function getDynamicWizardSteps({ accountStatus, lookupState, profileTarget, sele
       return [
         { id: 1, label: 'Cari' },
         { id: 2, label: 'Tujuan' },
-        { id: 4, label: 'Child' },
+        { id: 4, label: 'Anak' },
         { id: 5, label: 'Review' },
       ]
     }
@@ -1587,17 +1807,21 @@ function getDynamicWizardSteps({ accountStatus, lookupState, profileTarget, sele
     return [
       { id: 1, label: 'Cari' },
       { id: 3, label: 'Ortu' },
-      { id: 4, label: 'Child' },
+      { id: 4, label: 'Anak' },
       { id: 5, label: 'Review' },
     ]
   }
 
-  if (lookupState === 'existing-old-account') {
+  if (lookupState === 'existing-old-account-with-child-profile-contact' && !legacyAccountSelected) {
+    return [{ id: 1, label: 'Cari' }]
+  }
+
+  if (isOldAccountLookup(lookupState)) {
     return [
       { id: 1, label: 'Cari' },
       { id: 2, label: 'Tujuan' },
       { id: 3, label: 'Ortu' },
-      { id: 4, label: 'Child' },
+      { id: 4, label: 'Anak' },
       { id: 5, label: 'Review' },
     ]
   }
@@ -1637,16 +1861,23 @@ function WizardBackButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-function WizardLookupStep({ accountStatus, checkNumber, lookupState, lookupPickerOpen, phone, selectedChildSearchProfileId, setAccountStatus, setLookupState, setLookupPickerOpen, setPhone, setPackageIntent, setProfileTarget, setSelectedChildProfileId, setSelectedChildSearchProfileId }: {
+function WizardLookupStep({ accountStatus, checkNumber, legacyAccountSelected, lookupState, lookupPickerOpen, parentUpdateName, parentUpdatePhone, phone, profileTarget, selectedChildProfileId, selectedChildSearchProfileId, setAccountStatus, setLegacyAccountSelected, setLookupState, setLookupPickerOpen, setPhone, setPackageIntent, setProfileTarget, setSelectedChildProfileId, setSelectedChildSearchProfileId }: {
   accountStatus: AccountStatus | null
   checkNumber: () => void
+  legacyAccountSelected: boolean
   lookupState: LookupState
   lookupPickerOpen: boolean
+  parentUpdateName: string
+  parentUpdatePhone: string
   phone: string
+  profileTarget: ProfileTarget
+  selectedChildProfileId: string
   selectedChildSearchProfileId: string
   setAccountStatus: (value: AccountStatus | null) => void
+  setLegacyAccountSelected: (value: boolean) => void
   setLookupState: (value: LookupState) => void
   setLookupPickerOpen: (value: boolean) => void
+  setParentUpdatePhone: (value: string) => void
   setPhone: (value: string) => void
   setPackageIntent: (value: PackageIntent) => void
   setProfileTarget: (value: ProfileTarget) => void
@@ -1654,10 +1885,11 @@ function WizardLookupStep({ accountStatus, checkNumber, lookupState, lookupPicke
   setSelectedChildSearchProfileId: (value: string) => void
 }) {
   const isExistingFlow = accountStatus === 'existing'
-  const selectedLookupProfile = isSearchResolutionLookup(lookupState)
-    ? getChildProfileSearchResults(lookupState).find((profile) => profile.id === selectedChildSearchProfileId)
+  const selectedLookupProfile = (isSearchResolutionLookup(lookupState) || lookupState === 'existing-old-account-with-child-profile-contact')
+    ? childProfileSearchResults.find((profile) => profile.id === selectedChildSearchProfileId)
     : undefined
-
+  const selectedLookupParentAccount = selectedLookupProfile ? getParentAccountFromChildProfile(selectedLookupProfile) : null
+  const selectedLookupParentUpdateState = selectedLookupParentAccount ? getParentUpdateState(selectedLookupParentAccount, parentUpdateName, parentUpdatePhone) : null
   return (
     <StagePanel step="STEP 1" title="Cari Customer dan Status Akun">
       <ChoiceCard
@@ -1678,9 +1910,9 @@ function WizardLookupStep({ accountStatus, checkNumber, lookupState, lookupPicke
           <div className="lookup-row">
             <input
               value={phone}
-              placeholder="Email / No. HP / User serial"
+              placeholder="No. HP / User serial"
               onChange={(event) => setPhone(event.target.value)}
-              aria-label={isExistingFlow ? 'Email, no. HP, atau user serial akun aktif Ruangguru' : 'Nomor HP orang tua'}
+              aria-label={isExistingFlow ? 'No. HP atau User Serial customer' : 'Nomor HP orang tua'}
             />
             <button type="button" onClick={checkNumber}>Cek Akun</button>
           </div>
@@ -1688,35 +1920,45 @@ function WizardLookupStep({ accountStatus, checkNumber, lookupState, lookupPicke
           {lookupState === 'idle' && (
             <Callout className="lookup-hint">
               <strong>Arahan untuk Agent</strong>
-              <p>{isExistingFlow ? 'Input email, no. HP, atau user serial akun aktif Ruangguru saat ini.' : 'Input No. HP orang tua yang akan menjadi Master Account.'}</p>
+              <p>{isExistingFlow ? 'Input No. HP atau User Serial yang diberikan customer.' : 'Input No. HP orang tua yang akan menjadi Master Account.'}</p>
             </Callout>
           )}
-          {lookupState === 'existing-old-account' && (
-            <AccountResult
-              name={existingAccount.name}
-              phone={phone}
-              serial={existingAccount.serial}
-              statusLabel="Akun aktif ditemukan"
-              description="Lanjutkan ke tahap mapping."
+          {lookupState === 'existing-old-account-with-child-profile-contact' ? (
+            <OldAccountPickerTrigger
+              legacyAccountSelected={legacyAccountSelected}
+              matchedValue={phone}
+              profiles={getOldAccountProfileContactMatches(lookupState)}
+              selectedChildSearchProfileId={selectedChildSearchProfileId}
+              onOpen={() => setLookupPickerOpen(true)}
+            />
+          ) : lookupState === 'existing-old-account' && (
+            <OldAccountPickerTrigger
+              legacyAccountSelected={legacyAccountSelected}
+              matchedValue={phone}
+              profiles={[]}
+              selectedChildSearchProfileId=""
+              onOpen={() => setLookupPickerOpen(true)}
             />
           )}
-          {isParentProfileLookup(lookupState) && <ParentAccountResult account={getLookupParentAccount(lookupState)!} />}
+
           {isSearchResolutionLookup(lookupState) && (
             <>
               {!selectedLookupProfile && (
                 <LookupPickerTrigger
                   lookupState={lookupState}
+                  matchedValue={phone}
                   selectedChildSearchProfileId={selectedChildSearchProfileId}
                   onOpen={() => setLookupPickerOpen(true)}
                 />
               )}
               {selectedLookupProfile && (
-                <div className="lookup-main-review">
+                <div className="lookup-main-review compact-selected-target">
                   <SelectedTargetSummary
                     actionLabel="Ubah"
                     onAction={() => setLookupPickerOpen(true)}
-                    parentName={selectedLookupProfile.parentName ?? 'Parent'}
-                    parentPhone={selectedLookupProfile.parentPhone ?? '-'}
+                    matchedValue={phone}
+                    parentName={selectedLookupParentUpdateState?.nextName ?? selectedLookupProfile.parentName ?? 'Orang Tua'}
+                    parentPhone={selectedLookupParentUpdateState?.nextPhone ?? selectedLookupProfile.parentPhone ?? '-'}
                     parentSerial={selectedLookupProfile.parentSerial}
                     profile={selectedLookupProfile}
                   />
@@ -1724,15 +1966,51 @@ function WizardLookupStep({ accountStatus, checkNumber, lookupState, lookupPicke
               )}
             </>
           )}
-          {lookupState === 'existing-not-registered' && <ExistingNotRegistered setAccountStatus={setAccountStatus} />}
-          {lookupState === 'existing-child-phone' && <ExistingChildPhone setAccountStatus={setAccountStatus} />}
-          {lookupState === 'new-available' && <NewAvailableAccount isChildContact={isChildProfileContact(phone)} phone={phone} />}
-          {lookupState === 'new-registered' && <NewRegisteredAccount phone={phone} setAccountStatus={setAccountStatus} />}
+          {isLookupNoticeState(lookupState) && <LookupNoticeTrigger lookupState={lookupState} phone={phone} onOpen={() => setLookupPickerOpen(true)} />}
         </div>
       )}
-      {isSearchResolutionLookup(lookupState) && lookupPickerOpen && (
+      {lookupState === 'existing-old-account' && lookupPickerOpen && (
+        <OldAccountPickerSheet
+          legacyAccountSelected={legacyAccountSelected}
+          matchedValue={phone}
+          profiles={[]}
+          selectedChildSearchProfileId=""
+          setLegacyAccountSelected={setLegacyAccountSelected}
+          setPackageIntent={setPackageIntent}
+          setProfileTarget={setProfileTarget}
+          setSelectedChildProfileId={setSelectedChildProfileId}
+          setSelectedChildSearchProfileId={setSelectedChildSearchProfileId}
+          onClose={() => setLookupPickerOpen(false)}
+        />
+      )}
+      {lookupState === 'existing-old-account-with-child-profile-contact' && lookupPickerOpen && (
+        <OldAccountPickerSheet
+          legacyAccountSelected={legacyAccountSelected}
+          matchedValue={phone}
+          profiles={getOldAccountProfileContactMatches(lookupState)}
+          selectedChildSearchProfileId={selectedChildSearchProfileId}
+          setLegacyAccountSelected={setLegacyAccountSelected}
+          setPackageIntent={setPackageIntent}
+          setProfileTarget={setProfileTarget}
+          setSelectedChildProfileId={setSelectedChildProfileId}
+          setSelectedChildSearchProfileId={setSelectedChildSearchProfileId}
+          onClose={() => setLookupPickerOpen(false)}
+        />
+      )}
+      {isLookupNoticeState(lookupState) && lookupPickerOpen && (
+        <LookupNoticeSheet
+          lookupState={lookupState}
+          phone={phone}
+          setAccountStatus={setAccountStatus}
+          onClose={() => setLookupPickerOpen(false)}
+        />
+      )}
+      {(isSearchResolutionLookup(lookupState) || isParentProfileLookup(lookupState)) && lookupPickerOpen && (
         <LookupPickerSheet
           lookupState={lookupState}
+          matchedValue={phone}
+          profileTarget={profileTarget}
+          selectedChildProfileId={selectedChildProfileId}
           selectedChildSearchProfileId={selectedChildSearchProfileId}
           setLookupState={setLookupState}
           setPackageIntent={setPackageIntent}
@@ -1746,51 +2024,42 @@ function WizardLookupStep({ accountStatus, checkNumber, lookupState, lookupPicke
   )
 }
 
-function ParentDataStep({ mode, parentName, parentPhone, setParentName, setParentPhone, usesParentIdentity }: {
+function ActiveDataNote({ compact = false }: { compact?: boolean }) {
+  return <p className={compact ? 'active-data-note compact' : 'active-data-note'}>Pastikan data yang diisi merupakan data aktif dari Orang Tua dan Anak.</p>
+}
+
+function ParentDataStep({ mode, parentPhone, setParentPhone, usesParentIdentity }: {
   mode: 'migration' | 'new'
-  parentName: string
+  migrationIdentityToggle?: ReactNode
   parentPhone: string
-  setParentName: (value: string) => void
   setParentPhone: (value: string) => void
   usesParentIdentity: boolean
 }) {
   const shouldCheckParentPhone = mode === 'migration' && !usesParentIdentity
   const parentPhoneAccount = shouldCheckParentPhone ? getRegisteredParentAccount(parentPhone) : null
   const parentPhoneIsCheckable = shouldCheckParentPhone && canCheckParentPhone(parentPhone)
-  const shouldLockParentName = Boolean(parentPhoneAccount)
-  const parentNameValue = parentPhoneAccount?.name ?? parentName
-
   return (
     <div className="form-fields compact-form">
+      <ActiveDataNote />
       <TextField
-        helper={usesParentIdentity ? 'Nomor ini dikunci dari akun lama. Data lain tetap diisi sesuai informasi pembeli.' : undefined}
-        label="No. HP Parent"
+        helper={usesParentIdentity ? 'Terisi otomatis dari akun lama. Ubah hanya jika customer memberi nomor Orang Tua yang benar dan aktif.' : 'Pastikan nomor ini adalah nomor yang benar dan aktif.'}
+        label="No. HP Orang Tua"
         placeholder="Masukan no. HP orang tua"
-        readOnly={usesParentIdentity}
         value={parentPhone}
         onChange={setParentPhone}
       />
       {shouldCheckParentPhone && parentPhoneIsCheckable && (
         <ParentPhoneCheckResult account={parentPhoneAccount} phone={parentPhone} />
       )}
-      <TextField
-        helper={shouldLockParentName ? 'Dikunci dari akun yang ditemukan melalui No. HP Parent.' : undefined}
-        label="Nama Parent"
-        placeholder="Masukan nama lengkap orang tua"
-        readOnly={shouldLockParentName}
-        value={parentNameValue}
-        onChange={setParentName}
-      />
     </div>
   )
 }
 
-function ChildProfileStep({ childEmail, childName, childPhone, grade, isMigration, setChildEmail, setChildName, setChildPhone, setGrade }: {
+function ChildProfileStep({ childEmail, childName, childPhone, grade, setChildEmail, setChildName, setChildPhone, setGrade }: {
   childEmail: string
   childName: string
   childPhone: string
   grade: string
-  isMigration: boolean
   setChildEmail: (value: string) => void
   setChildName: (value: string) => void
   setChildPhone: (value: string) => void
@@ -1798,30 +2067,23 @@ function ChildProfileStep({ childEmail, childName, childPhone, grade, isMigratio
 }) {
   return (
     <div className="form-fields compact-form">
-      <TextField label="Nama Lengkap Child" placeholder="Masukan nama lengkap anak" value={childName} onChange={setChildName} />
+      <ActiveDataNote />
+      <TextField label="Nama Lengkap Anak" placeholder="Masukan nama lengkap anak" value={childName} onChange={setChildName} />
       <SelectField label="Kelas" value={grade} onChange={setGrade} />
       <TextField
         helper="No. HP anak hanya untuk data profil/kontak, bukan akses login utama. Nomor boleh sama dengan milik orang tua."
-        label="No. HP Child"
-        placeholder="Masukan no. HP anak (opsional)"
+        label="No. HP Anak"
+        placeholder="Masukan no. HP anak"
         value={childPhone}
         onChange={setChildPhone}
       />
       <TextField
         helper="Email anak hanya untuk data profil/kontak, bukan akses login utama. Email boleh sama dengan milik orang tua."
-        label="Email Child"
+        label="Email Anak"
         placeholder="Masukan email anak (opsional)"
         value={childEmail}
         onChange={setChildEmail}
       />
-      <Callout className="strong">
-        <strong>Yang perlu diberitahu</strong>
-        <PointList items={[
-          isMigration ? 'Data Child diisi sesuai informasi dari pembeli.' : 'Child baru dibuat di bawah Parent.',
-          <>No. HP dan Email anak <strong>tidak bisa digunakan login</strong>.</>,
-          'Username dan PIN dikirim ke WhatsApp Parent setelah transaksi berhasil.',
-        ]} />
-      </Callout>
     </div>
   )
 }
@@ -1838,18 +2100,18 @@ function NewChildProfileForm({ childEmail, childName, childPhone, grade, setChil
 }) {
   return (
     <div className="form-fields compact-form">
-      <TextField label="Nama Lengkap Child" placeholder="Masukan nama lengkap anak" value={childName} onChange={setChildName} />
+      <TextField label="Nama Lengkap Anak" placeholder="Masukan nama lengkap anak" value={childName} onChange={setChildName} />
       <SelectField label="Kelas" value={grade} onChange={setGrade} />
       <TextField
         helper="No. HP anak hanya untuk data profil/kontak. Nomor boleh sama dengan milik orang tua."
-        label="No. HP Child"
-        placeholder="Masukan no. HP anak (opsional)"
+        label="No. HP Anak"
+        placeholder="Masukan no. HP anak"
         value={childPhone}
         onChange={setChildPhone}
       />
       <TextField
         helper="Email anak hanya untuk data profil/kontak dan tidak bisa digunakan login."
-        label="Email Child"
+        label="Email Anak"
         placeholder="Masukan email anak (opsional)"
         value={childEmail}
         onChange={setChildEmail}
@@ -1857,8 +2119,8 @@ function NewChildProfileForm({ childEmail, childName, childPhone, grade, setChil
       <Callout>
         <strong>Setelah transaksi berhasil</strong>
         <PointList items={[
-          'Child baru dibuat di bawah Parent yang ditemukan.',
-          'Username dan PIN anak dikirim ke WhatsApp Parent.',
+          'Anak baru dibuat di bawah Orang Tua yang ditemukan.',
+          'Username dan PIN anak dikirim ke WhatsApp Orang Tua.',
         ]} />
       </Callout>
     </div>
@@ -1885,32 +2147,27 @@ function WizardReviewStep({ accountStatus, childName, consent, grade, parentAcco
   const selectedSearchProfile = childProfileSearchResults.find((profile) => profile.id === selectedChildSearchProfileId)
   const parentLabel = usesParentIdentity ? parentName || 'Orang tua dari data akun lama' : parentName || 'Orang tua'
   const parentNumberLabel = usesParentIdentity ? phone : parentPhone || phone || 'yang diisi agent'
-  const parentDisplayName = selectedSearchProfile?.parentName ?? (parentName || parentAccount?.name || parentLabel)
-  const parentDisplayPhone = selectedSearchProfile?.parentPhone ?? (parentPhone || parentAccount?.phone || parentNumberLabel)
+  const parentDisplayName = parentName || selectedSearchProfile?.parentName || parentAccount?.name || parentLabel
+  const parentDisplayPhone = parentPhone || selectedSearchProfile?.parentPhone || parentAccount?.phone || parentNumberLabel
   const targetProfileName = selectedSearchProfile
     ? selectedSearchProfile.name
     : parentAccount
     ? profileTarget === 'existing' && selectedProfile
       ? selectedProfile.name
-      : childName || 'Child baru'
+      : childName || 'Anak baru'
     : isNewAccount || usesParentIdentity
-      ? childName || 'Child baru'
+      ? childName || 'Anak baru'
       : existingAccount.name
   const targetGrade = selectedSearchProfile?.grade ?? (parentAccount && profileTarget === 'existing' && selectedProfile ? selectedProfile.grade : grade || '-')
   const usesExistingProfile = Boolean(selectedSearchProfile || (parentAccount && profileTarget === 'existing' && selectedProfile))
   const reviewType = selectedSearchProfile || parentAccount ? 'Aktivasi paket' : isNewAccount ? 'Pembuatan akun' : 'Konversi akun'
-  const reviewNote = selectedSearchProfile
-    ? 'Paket akan aktif di Child yang ditemukan. Akses profil tidak berubah.'
-    : parentAccount
-    ? usesExistingProfile
-      ? 'Paket akan aktif di profil yang dipilih. Akses profil tidak berubah.'
-      : 'Profil baru akan dibuat sebelum paket diaktifkan.'
-    : isNewAccount
-      ? 'Struktur Parent dan Child baru akan dibuat.'
-      : 'Akun aktif akan disesuaikan ke struktur baru.'
-  const accessValue = usesExistingProfile ? 'Tidak berubah' : 'Username + PIN'
-  const accessCopy = usesExistingProfile ? 'Gunakan akses profil yang sudah ada.' : parentAccount || isNewAccount ? 'Username dan PIN dikirim ke WhatsApp Parent.' : 'Login anak berubah ke Username dan PIN.'
-  const consentCopy = usesExistingProfile ? 'Child dan Parent tujuan paket sudah dikonfirmasi ke customer.' : 'Perubahan akses login dan pemrosesan data sudah dijelaskan ke customer.'
+  const accessCopy = parentAccount || isNewAccount ? 'Username dan PIN dikirim ke WhatsApp Orang Tua.' : 'Login anak berubah ke Username dan PIN.'
+  const parentPhoneWillChange = Boolean(selectedSearchProfile && parentPhone && normalizePhoneDigits(parentPhone) !== normalizePhoneDigits(selectedSearchProfile.parentPhone ?? ''))
+  const changeOverviewItems = [
+    parentPhoneWillChange ? `No. HP Orang Tua diubah dari ${selectedSearchProfile?.parentPhone} ke ${parentPhone}.` : null,
+    !usesExistingProfile ? accessCopy : null,
+  ].filter(Boolean) as string[]
+  const consentCopy = 'Saya sudah memastikan data Orang Tua, data Anak, dan profil tujuan paket sudah benar, aktif, dan sesuai dengan informasi customer.'
   const reviewProfile: ChildProfile = {
     contact: selectedSearchProfile?.contact ?? selectedProfile?.contact ?? undefined,
     grade: targetGrade,
@@ -1928,7 +2185,6 @@ function WizardReviewStep({ accountStatus, childName, consent, grade, parentAcco
   return (
     <div className="wizard-review scan-review">
       <ReviewTargetCard
-        note={reviewNote}
         parentName={parentDisplayName}
         parentPhone={parentDisplayPhone}
         parentSerial={selectedSearchProfile?.parentSerial ?? parentAccount?.serial}
@@ -1936,16 +2192,15 @@ function WizardReviewStep({ accountStatus, childName, consent, grade, parentAcco
         typeLabel={reviewType}
       />
 
-      <section className="review-access-card" aria-label="Akses Child">
-        <span>Akses Child</span>
-        <strong>{accessValue}</strong>
-        <p>{accessCopy}</p>
-      </section>
+      {changeOverviewItems.length > 0 && (
+        <ReviewChangeOverview items={changeOverviewItems} />
+      )}
 
       <section className="review-checklist" aria-label="Yang perlu dipastikan">
-        <h4>Pastikan sebelum lanjut</h4>
+        <h4>Pernyataan agent</h4>
+        <ReviewCheckItem>Data Orang Tua dan Anak sudah benar dan aktif.</ReviewCheckItem>
         <ReviewCheckItem>Profil tujuan paket sudah sesuai dengan customer.</ReviewCheckItem>
-        {usesExistingProfile ? <ReviewCheckItem>Akses profil anak tetap mengikuti pengaturan yang sudah ada.</ReviewCheckItem> : <ReviewCheckItem>No. HP/email anak hanya tersimpan sebagai data profil.</ReviewCheckItem>}
+        {!usesExistingProfile && <ReviewCheckItem>No. HP/email anak hanya tersimpan sebagai data profil.</ReviewCheckItem>}
       </section>
 
       <label className="consent-row review-consent">
@@ -1956,42 +2211,40 @@ function WizardReviewStep({ accountStatus, childName, consent, grade, parentAcco
   )
 }
 
-function ReviewTargetCard({ note, parentName, parentPhone, parentSerial, profile, typeLabel }: { note: string; parentName: string; parentPhone: string; parentSerial?: string; profile: ChildProfile; typeLabel: string }) {
+function ReviewTargetCard({ parentName, parentPhone, parentSerial, profile, typeLabel }: { parentName: string; parentPhone: string; parentSerial?: string; profile: ChildProfile; typeLabel: string }) {
   return (
     <section className="search-target-card selected review-target-card" aria-label="Ringkasan tujuan paket">
       <div className="search-target-head">
         <div>
           <span className="summary-kicker">{typeLabel}</span>
           <strong>Profil tujuan paket</strong>
-          <small>{note}</small>
-        </div>
-      </div>
-      <div className="search-target-selected">
-        <div className="selected-entity child">
-          <div className="entity-heading">
-            <span>Child</span>
-            <strong>{profile.name}</strong>
-          </div>
-          <div className="entity-meta-row">
-            <small>{profile.grade}</small>
-            <UserSerial value={profile.serial} />
-          </div>
-          <ActivePackageLines profile={profile} />
-        </div>
-        <div className="selected-entity parent">
-          <div className="entity-heading">
-            <span>Parent</span>
-            <strong>{parentName}</strong>
-          </div>
-          <div className="entity-meta-row">
-            {parentPhone && <small>{parentPhone}</small>}
-            <UserSerial value={parentSerial} />
+          <div className="review-package-line">
+            <span>Paket dibeli</span>
+            <strong>ruangbelajar SMA/SMK 1 Tahun</strong>
           </div>
         </div>
       </div>
+      <AccountRelationCard
+        mode="child-first"
+        parentName={parentName}
+        parentPhone={parentPhone}
+        parentSerial={parentSerial}
+        profile={profile}
+      />
     </section>
   )
 }
+function ReviewChangeOverview({ items }: { items: string[] }) {
+  return (
+    <section className="review-change-overview" aria-label="Overview perubahan">
+      <span>Overview perubahan</span>
+      <ul>
+        {items.map((item) => <li key={item}>{item}</li>)}
+      </ul>
+    </section>
+  )
+}
+
 function ReviewCheckItem({ children, warning = false }: { children: ReactNode; warning?: boolean }) {
   return (
     <div className={warning ? 'review-check warning' : 'review-check'}>
@@ -2013,48 +2266,48 @@ function ChoiceCard({ active = false, description, onClick, title }: { active?: 
   )
 }
 
-function ParentAccountResult({ account }: { account: ParentProfileAccount }) {
-  const hasProfiles = account.profiles.length > 0
-  const hasActivePackage = account.profiles.some((profile) => profile.hasActivePackage)
-
-  return (
-    <div className="search-resolution parent-lookup-result">
-      <div className="resolution-group">
-        <span className="resolution-label">Akun cocok</span>
-        <ParentAccountCard account={account} variant="success" />
-      </div>
-      <Callout variant={hasActivePackage ? 'warning' : 'info'}>
-        <strong>Aksi Agent</strong>
-        <PointList items={hasProfiles ? [
-          'Konfirmasi nama Child yang akan menerima paket.',
-          'Jika Child belum ada di daftar, pilih Buat Profil Baru di tahap berikutnya.',
-          hasActivePackage ? 'Jika Child punya paket aktif, pastikan paket baru memang untuk Child yang sama.' : 'Lanjutkan jika Child tujuan sudah benar.',
-        ] : [
-          'Minta nama, No. HP, email, dan kelas Child dari customer.',
-          'Buat Child baru di bawah akun Parent ini.',
-        ]} />
-      </Callout>
-    </div>
-  )
+function getDirectParentResultCount(lookupState: LookupState) {
+  if (lookupState === 'existing-multiple-matches') return 1
+  if (isParentProfileLookup(lookupState)) return 1
+  return 0
 }
-function LookupPickerTrigger({ lookupState, onOpen, selectedChildSearchProfileId }: { lookupState: LookupState; onOpen: () => void; selectedChildSearchProfileId: string }) {
+
+function formatResultSummaryPart(count: number, label: string) {
+  if (count <= 0) return null
+  return `${count} ${label}`
+}
+
+function ResultSummaryText({ childCount = 0, matchedValue, oldAccountCount = 0, parentCount = 0 }: { childCount?: number; matchedValue: string; oldAccountCount?: number; parentCount?: number }) {
+  const parts = [
+    formatResultSummaryPart(parentCount, 'Orang Tua'),
+    formatResultSummaryPart(childCount, 'Anak'),
+    formatResultSummaryPart(oldAccountCount, 'akun lama'),
+  ].filter(Boolean)
+
+  if (parts.length === 0) return null
+
+  return <p className="result-summary-text">{parts.join(', ')} ditemukan dengan {isSerialLookupInput(matchedValue) ? 'user serial' : 'nomor'} <strong>{matchedValue}</strong></p>
+}
+
+function LookupPickerTrigger({ lookupState, matchedValue, onOpen, selectedChildSearchProfileId }: { lookupState: LookupState; matchedValue: string; onOpen: () => void; selectedChildSearchProfileId: string }) {
   const profileResults = getChildProfileSearchResults(lookupState)
-  const parentCount = getChildProfileParentCount(profileResults)
   const selectedProfile = profileResults.find((profile) => profile.id === selectedChildSearchProfileId)
 
   return (
     <SearchTargetCard
       actionLabel={selectedProfile ? 'Ubah' : 'Lihat'}
-      childCount={profileResults.length}
-      parentCount={parentCount}
+      matchedValue={matchedValue}
       profile={selectedProfile}
       onAction={onOpen}
     />
   )
 }
 
-function LookupPickerSheet({ lookupState, selectedChildSearchProfileId, setLookupState, setPackageIntent, setProfileTarget, setSelectedChildProfileId, setSelectedChildSearchProfileId, onClose }: {
+function LookupPickerSheet({ lookupState, matchedValue, profileTarget, selectedChildProfileId, selectedChildSearchProfileId, setLookupState, setPackageIntent, setProfileTarget, setSelectedChildProfileId, setSelectedChildSearchProfileId, onClose }: {
   lookupState: LookupState
+  matchedValue: string
+  profileTarget: ProfileTarget
+  selectedChildProfileId: string
   selectedChildSearchProfileId: string
   setLookupState: (value: LookupState) => void
   setPackageIntent: (value: PackageIntent) => void
@@ -2063,10 +2316,19 @@ function LookupPickerSheet({ lookupState, selectedChildSearchProfileId, setLooku
   setSelectedChildSearchProfileId: (value: string) => void
   onClose: () => void
 }) {
+  const profileResults = getChildProfileSearchResults(lookupState)
+  const hasSelection = isParentProfileLookup(lookupState)
+    ? Boolean(selectedChildProfileId || profileTarget === 'new')
+    : Boolean(selectedChildSearchProfileId)
+
   return (
-    <BottomSheet className="lookup-picker-sheet" title="Pilih Profil Tujuan Paket" onClose={onClose}>
+    <BottomSheet className="lookup-picker-sheet" title="Pilih Tujuan Paket" onClose={onClose}>
+      <ResultSummaryText childCount={profileResults.length} matchedValue={matchedValue} parentCount={getDirectParentResultCount(lookupState)} />
       <SearchResolutionResults
         lookupState={lookupState}
+        matchedValue={matchedValue}
+        profileTarget={profileTarget}
+        selectedChildProfileId={selectedChildProfileId}
         selectedChildSearchProfileId={selectedChildSearchProfileId}
         setLookupState={setLookupState}
         setPackageIntent={setPackageIntent}
@@ -2074,14 +2336,17 @@ function LookupPickerSheet({ lookupState, selectedChildSearchProfileId, setLooku
         setSelectedChildProfileId={setSelectedChildProfileId}
         setSelectedChildSearchProfileId={setSelectedChildSearchProfileId}
       />
-      <button className="sheet-primary" disabled={!selectedChildSearchProfileId} type="button" onClick={onClose}>Pilih Profil</button>
+      <button className="sheet-primary" disabled={!hasSelection} type="button" onClick={onClose}>Pilih Tujuan</button>
     </BottomSheet>
   )
 }
 
 
-function SearchResolutionResults({ lookupState, selectedChildSearchProfileId, setLookupState, setPackageIntent, setProfileTarget, setSelectedChildProfileId, setSelectedChildSearchProfileId }: {
+function SearchResolutionResults({ lookupState, matchedValue, profileTarget, selectedChildProfileId, selectedChildSearchProfileId, setLookupState, setPackageIntent, setProfileTarget, setSelectedChildProfileId, setSelectedChildSearchProfileId }: {
   lookupState: LookupState
+  matchedValue: string
+  profileTarget: ProfileTarget
+  selectedChildProfileId: string
   selectedChildSearchProfileId: string
   setLookupState: (value: LookupState) => void
   setPackageIntent: (value: PackageIntent) => void
@@ -2090,14 +2355,13 @@ function SearchResolutionResults({ lookupState, selectedChildSearchProfileId, se
   setSelectedChildSearchProfileId: (value: string) => void
 }) {
   const profileResults = getChildProfileSearchResults(lookupState)
-  const parentCount = getChildProfileParentCount(profileResults)
-  const hasParentAccountResult = lookupState === 'existing-multiple-matches'
-  const hasMultipleProfiles = profileResults.length > 1
-  const shouldGroupByParent = profileResults.length > 0
-  const isSameParentRelationMatch = hasParentAccountResult
-    && parentCount === 1
-    && profileResults.every((profile) => profile.parentPhone === parentAccountWithChildren.phone)
-  const showSeparateParentResult = hasParentAccountResult && !isSameParentRelationMatch
+  const parentLookupAccount = getLookupParentAccount(lookupState)
+  const directParentAccount = parentLookupAccount ?? (lookupState === 'existing-multiple-matches'
+    ? { ...parentAccountWithChildren, phone: normalizePhoneDigits(matchedValue).length >= 8 ? matchedValue : parentAccountWithChildren.phone }
+    : null)
+  const shouldShowParentBucket = false
+  const showSeparateParentResult = Boolean(directParentAccount)
+  const activeChildId = parentLookupAccount ? selectedChildProfileId : selectedChildSearchProfileId
   const parentGroups = profileResults.reduce<Array<{ name: string; phone: string; serial?: string; profiles: ChildProfile[] }>>((groups, profile) => {
     const parentPhoneKey = profile.parentPhone ?? 'unknown'
     const existingGroup = groups.find((group) => group.phone === parentPhoneKey)
@@ -2107,50 +2371,18 @@ function SearchResolutionResults({ lookupState, selectedChildSearchProfileId, se
       return groups
     }
 
-    return [...groups, { name: profile.parentName ?? 'Parent', phone: parentPhoneKey, serial: profile.parentSerial, profiles: [profile] }]
+    return [...groups, { name: profile.parentName ?? 'Orang Tua', phone: parentPhoneKey, serial: profile.parentSerial, profiles: [profile] }]
   }, [])
 
-  const resolutionCopy = (() => {
-    if (lookupState === 'existing-multiple-matches') {
-      if (isSameParentRelationMatch) {
-        return {
-          title: 'Data ditemukan dalam 1 relasi Parent',
-          description: 'Input ini milik Parent dan juga dipakai oleh Child di bawah Parent yang sama. Pilih Child tujuan paket.',
-          variant: 'success' as CalloutVariant,
-        }
-      }
-
-      return {
-        title: 'Data ditemukan di beberapa relasi',
-        description: 'Input ini terdaftar sebagai Parent dan juga dipakai di Child. Pilih tujuan pembelian paket yang benar.',
-        variant: 'warning' as CalloutVariant,
-      }
-    }
-
-    if (lookupState === 'existing-child-profiles-same-parent') {
-      return {
-        title: 'Beberapa Child ditemukan',
-        description: 'Data ini dipakai oleh beberapa Child di 1 Parent. Pilih Child yang akan menerima paket.',
-        variant: 'warning' as CalloutVariant,
-      }
-    }
-
-    if (lookupState === 'existing-child-profiles-cross-parent') {
-      return {
-        title: 'Data terhubung ke beberapa Parent',
-        description: 'Konfirmasi nama anak dan nama orang tua sebelum memilih tujuan paket.',
-        variant: 'warning' as CalloutVariant,
-      }
-    }
-
-    return {
-      title: 'Child ditemukan',
-      description: 'Data yang dimasukkan terhubung ke Child. Child bukan akun login, tapi bisa menjadi tujuan aktivasi paket.',
-      variant: 'success' as CalloutVariant,
-    }
-  })()
-
   const selectParentAccount = () => {
+    if (parentLookupAccount) {
+      setProfileTarget('new')
+      setSelectedChildProfileId('')
+      setSelectedChildSearchProfileId('')
+      setPackageIntent(null)
+      return
+    }
+
     setLookupState('existing-parent-with-children')
     setProfileTarget(null)
     setSelectedChildProfileId('')
@@ -2160,69 +2392,93 @@ function SearchResolutionResults({ lookupState, selectedChildSearchProfileId, se
 
   const selectChildProfile = (profile: ChildProfile) => {
     setProfileTarget('existing')
+    setPackageIntent(null)
+
+    if (parentLookupAccount) {
+      setSelectedChildProfileId(profile.id)
+      setSelectedChildSearchProfileId('')
+      return
+    }
+
     setSelectedChildProfileId('')
     setSelectedChildSearchProfileId(profile.id)
-    setPackageIntent(null)
   }
 
   return (
     <div className="search-resolution">
-      <Callout icon={<Info size={16} />} variant={resolutionCopy.variant}>
-        <strong>{resolutionCopy.title}</strong>
-        <p>{resolutionCopy.description}</p>
-      </Callout>
-
       {showSeparateParentResult && (
         <div className="resolution-group">
-          <span className="resolution-label">Akun cocok</span>
-          <ParentAccountCard account={parentAccountWithChildren} onClick={selectParentAccount} />
+          <span className="resolution-label">Akun Orang Tua</span>
+          <ParentAccountCard account={directParentAccount!} active={Boolean(parentLookupAccount && profileTarget === 'new')} matchedValue={matchedValue} onClick={selectParentAccount} showProfiles={false} />
         </div>
       )}
 
-      <div className="resolution-group result-list-shell">
-        <span className="resolution-label">{parentCount > 1 ? 'Pilih profil Child dari Parent yang benar' : hasMultipleProfiles ? 'Pilih Child' : 'Child'}</span>
-        <div className={shouldGroupByParent ? 'resolution-profile-groups grouped' : 'resolution-profile-groups'}>
-          {parentGroups.map((group) => (
-            <div className={shouldGroupByParent ? 'resolution-parent-bucket grouped' : 'resolution-parent-bucket'} key={group.phone}>
-              {shouldGroupByParent && <ParentBucketHeading name={group.name} phone={group.phone} serial={group.serial} />}
-              {group.profiles.map((profile) => (
-                <ChildTargetCandidateCard
-                  active={selectedChildSearchProfileId === profile.id}
-                  key={profile.id}
-                  profile={profile}
-                  onClick={() => selectChildProfile(profile)}
-                  hideParentDetail={shouldGroupByParent}
-                />
-              ))}
-            </div>
-          ))}
+      {profileResults.length > 0 && (
+        <div className="resolution-group result-list-shell">
+          <span className="resolution-label">Profil Anak</span>
+          <div className={shouldShowParentBucket ? 'resolution-profile-groups grouped' : 'resolution-profile-groups'}>
+            {parentGroups.map((group) => (
+              <div className={shouldShowParentBucket ? 'resolution-parent-bucket grouped' : 'resolution-parent-bucket'} key={group.phone}>
+                {shouldShowParentBucket && <ParentBucketHeading name={group.name} phone={group.phone} serial={group.serial} />}
+                {group.profiles.map((profile) => (
+                  <ChildTargetCandidateCard
+                    active={activeChildId === profile.id}
+                    key={profile.id}
+                    profile={profile}
+                    onClick={() => selectChildProfile(profile)}
+                    hideParentDetail={false}
+                    matchedValue={matchedValue}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      <Callout>
-        <strong>Arahan untuk Agent</strong>
-        <PointList items={isSameParentRelationMatch ? [
-          'Akun Parent hanya menjadi wadah relasi, bukan pilihan tujuan paket.',
-          'Pilih tepat 1 Child yang akan menerima paket.',
-          'No. HP/email yang sama boleh muncul di beberapa Child karena data profil tidak dipakai untuk login.',
-        ] : lookupState === 'existing-child-profiles-cross-parent' ? [
-          'Tanyakan ulang nama anak dan nama orang tua sebelum memilih.',
-          'Pilih tepat 1 Child sebagai tujuan aktivasi paket.',
-          'No. HP/email di Child bukan akses login, jadi boleh muncul di beberapa profil.',
-        ] : lookupState === 'existing-child-profiles-same-parent' ? [
-          'Konfirmasi anak yang akan menerima paket karena ada beberapa Child dalam akun yang sama.',
-          'Pilih tepat 1 Child sebelum lanjut review.',
-          'No. HP/email profil anak tidak unik dan tidak dipakai untuk login.',
-        ] : [
-          'Konfirmasi dulu apakah pembelian paket untuk akun orang tua atau salah satu Child.',
-          'No. HP/email yang sama boleh muncul di Child karena data profil tidak dipakai untuk login.',
-          'Jika memilih Child, lanjut review tujuan paket tanpa membuat akun baru.',
-        ]} />
-      </Callout>
     </div>
   )
 }
-function ProfileTargetStage({ account, childEmail, childName, childPhone, duplicateProfileAcknowledged, duplicateProfileMatches, grade, parentUpdateName, parentUpdateOpen, parentUpdatePhone, profileTarget, selectedChildProfileId, setChildEmail, setChildName, setChildPhone, setDuplicateProfileAcknowledged, setGrade, setPackageIntent, setParentUpdateName, setParentUpdateOpen, setParentUpdatePhone, setProfileTarget, setSelectedChildProfileId }: {
+function SelectedChildAccountStage({ account, parentUpdateName, parentUpdatePhone, profile, setParentUpdatePhone }: {
+  account: ParentProfileAccount
+  parentUpdateName: string
+  parentUpdatePhone: string
+  profile: ChildProfile
+  setParentUpdatePhone: (value: string) => void
+}) {
+  const parentUpdateState = getParentUpdateState(account, parentUpdateName, parentUpdatePhone)
+
+  return (
+    <div className="profile-target-stage">
+      <ParentUpdatePanel
+        parentPhone={parentUpdatePhone || account.phone}
+        updateState={parentUpdateState}
+        setParentPhone={setParentUpdatePhone}
+      />
+      <ReadonlyChildDetailPanel profile={profile} />
+    </div>
+  )
+}
+
+function ReadonlyChildDetailPanel({ profile }: { profile: ChildProfile }) {
+  return (
+    <div className="readonly-child-panel">
+      <div className="parent-update-head">
+        <div>
+          <strong>Data Anak</strong>
+        </div>
+      </div>
+      <div className="form-fields compact-form readonly-child-fields">
+        <ReadonlyTextInput label="Nama Anak" value={profile.name} />
+        <ReadonlyTextInput label="Kelas" value={profile.grade} />
+        <ReadonlyTextInput label="No. HP Anak" value={profile.contact ?? '-'} />
+        <ReadonlyTextInput label="User Serial Anak" value={profile.serial} />
+        {profile.lastLoginAt && <ReadonlyTextInput label="Login Terakhir" value={profile.lastLoginAt} />}
+      </div>
+    </div>
+  )
+}
+function ProfileTargetStage({ account, childEmail, childName, childPhone, duplicateProfileAcknowledged, duplicateProfileMatches, grade, parentUpdateName, parentUpdatePhone, profileTarget, selectedChildProfileId, setChildEmail, setChildName, setChildPhone, setDuplicateProfileAcknowledged, setGrade, setPackageIntent, setParentUpdatePhone, setProfileTarget, setSelectedChildProfileId }: {
   account: ParentProfileAccount
   childEmail: string
   childName: string
@@ -2231,7 +2487,6 @@ function ProfileTargetStage({ account, childEmail, childName, childPhone, duplic
   duplicateProfileMatches: ChildProfile[]
   grade: string
   parentUpdateName: string
-  parentUpdateOpen: boolean
   parentUpdatePhone: string
   profileTarget: ProfileTarget
   selectedChildProfileId: string
@@ -2241,8 +2496,6 @@ function ProfileTargetStage({ account, childEmail, childName, childPhone, duplic
   setDuplicateProfileAcknowledged: (value: boolean) => void
   setGrade: (value: string) => void
   setPackageIntent: (value: PackageIntent) => void
-  setParentUpdateName: (value: string) => void
-  setParentUpdateOpen: (value: boolean) => void
   setParentUpdatePhone: (value: string) => void
   setProfileTarget: (value: ProfileTarget) => void
   setSelectedChildProfileId: (value: string) => void
@@ -2250,15 +2503,6 @@ function ProfileTargetStage({ account, childEmail, childName, childPhone, duplic
   const selectedProfile = account.profiles.find((profile) => profile.id === selectedChildProfileId)
   const hasProfiles = account.profiles.length > 0
   const parentUpdateState = getParentUpdateState(account, parentUpdateName, parentUpdatePhone)
-  const parentDisplayName = parentUpdateState.nextName
-  const parentDisplayPhone = parentUpdateState.nextPhone
-
-  const openParentUpdate = () => {
-    if (!parentUpdateName.trim()) setParentUpdateName(account.name)
-    if (!parentUpdatePhone.trim()) setParentUpdatePhone(account.phone)
-    setParentUpdateOpen(true)
-  }
-
   const selectExistingProfile = (profile: ChildProfile) => {
     setProfileTarget('existing')
     setSelectedChildProfileId(profile.id)
@@ -2275,13 +2519,8 @@ function ProfileTargetStage({ account, childEmail, childName, childPhone, duplic
 
   return (
     <div className="profile-target-stage">
-      <div className="target-stage-brief">
-        <strong>{hasProfiles ? 'Pilih Child tujuan paket' : 'Buat Child untuk aktivasi paket'}</strong>
-        <p>{hasProfiles ? 'Gunakan daftar di bawah untuk memilih Child yang disebut customer.' : 'Akun Parent ini belum punya Child. Lengkapi data Child baru dari customer.'}</p>
-      </div>
-
       <div className="resolution-group result-list-shell parent-profile-selection">
-        <span className="resolution-label">{hasProfiles ? 'Child dalam akun Parent ini' : 'Akun Parent'}</span>
+        <span className="resolution-label">{hasProfiles ? 'Tujuan Paket' : 'Tujuan Paket'}</span>
         <div className="resolution-profile-groups grouped">
           <div className="resolution-parent-bucket grouped">
             <ParentBucketHeading name={account.name} phone={account.phone} serial={account.serial} />
@@ -2301,39 +2540,23 @@ function ProfileTargetStage({ account, childEmail, childName, childPhone, duplic
 
       {selectedProfile?.hasActivePackage && (
         <Callout variant="warning">
-          <strong>Child ini sudah punya paket aktif</strong>
+          <strong>Anak ini sudah punya paket aktif</strong>
           <PointList items={[
-            'Pastikan paket baru memang akan diaktifkan untuk Child ini.',
-            'Jika bukan untuk Child ini, pilih Child lain atau buat Profil Baru.',
+            'Pastikan paket baru memang akan diaktifkan untuk Anak ini.',
+            'Jika bukan untuk Anak ini, pilih Anak lain atau buat Profil Baru.',
           ]} />
         </Callout>
       )}
 
-      {profileTarget === 'existing' && selectedProfile && (
-        <>
-          <SelectedTargetSummary
-            parentName={parentDisplayName}
-            parentPhone={parentDisplayPhone}
-            parentSerial={account.serial}
-            profile={selectedProfile}
-          />
-          <ParentUpdatePanel
-            account={account}
-            open={parentUpdateOpen}
-            parentName={parentUpdateName || account.name}
-            parentPhone={parentUpdatePhone || account.phone}
-            updateState={parentUpdateState}
-            setOpen={setParentUpdateOpen}
-            setParentName={setParentUpdateName}
-            setParentPhone={setParentUpdatePhone}
-            onOpen={openParentUpdate}
-          />
-        </>
-      )}
+      <ParentUpdatePanel
+        parentPhone={parentUpdatePhone || account.phone}
+        updateState={parentUpdateState}
+        setParentPhone={setParentUpdatePhone}
+      />
 
       {profileTarget === 'new' && (
         <div className="new-profile-inline">
-          <h4>Data Child Baru</h4>
+          <h4>Data Anak Baru</h4>
           <NewChildProfileForm
             childEmail={childEmail}
             childName={childName}
@@ -2356,85 +2579,157 @@ function ProfileTargetStage({ account, childEmail, childName, childPhone, duplic
   )
 }
 
-function ParentUpdatePanel({ account, onOpen, open, parentName, parentPhone, setOpen, setParentName, setParentPhone, updateState }: {
-  account: ParentProfileAccount
-  onOpen: () => void
-  open: boolean
+function HighlightedMatch({ match, value }: { match?: string; value?: string }) {
+  if (!value) return null
+
+  const normalizedDigitMatch = normalizePhoneDigits(match ?? '')
+  const normalizedDigitValue = normalizePhoneDigits(value)
+  const normalizedTextMatch = normalizeLookupText(match ?? '')
+  const normalizedTextValue = normalizeLookupText(value)
+  const isDigitMatch = Boolean(normalizedDigitMatch && normalizedDigitValue && normalizedDigitValue.includes(normalizedDigitMatch.slice(-6)))
+  const isTextMatch = Boolean(normalizedTextMatch && normalizedTextValue && normalizedTextValue.includes(normalizedTextMatch))
+  const isMatch = isDigitMatch || isTextMatch
+
+  return <span className={isMatch ? 'data-chip matched' : 'data-chip'}>{value}</span>
+}
+
+function ParentIdentityBlock({ matchedValue, name, phone, serial }: { matchedValue?: string; name: string; phone: string; serial?: string }) {
+  return (
+    <div className="relation-identity parent">
+      <div className="relation-title-row">
+        <span className="identity-badge parent">Orang Tua</span>
+        <strong>{name}</strong>
+      </div>
+      <div className="relation-meta-row">
+        <HighlightedMatch match={matchedValue} value={phone} />
+        <UserSerial match={matchedValue} value={serial} />
+      </div>
+    </div>
+  )
+}
+
+function LeadStatusBadge({ status = 'no-lead' }: { status?: LeadAssignmentStatus }) {
+  const copy: Record<LeadAssignmentStatus, { label: string; text: string }> = {
+    'assigned-to-me': { label: 'Lead kamu', text: 'Lead sudah ditugaskan ke kamu' },
+    'no-lead': { label: 'Belum jadi lead', text: 'Belum ditugaskan ke agent' },
+  }
+  const item = copy[status]
+
+  return <span className={`lead-status-badge ${status}`} title={item.text}>{item.label}</span>
+}
+
+function ChildIdentityBlock({ matchedValue, profile }: { matchedValue?: string; profile: ChildProfile }) {
+  return (
+    <div className="relation-identity child">
+      <div className="relation-title-row">
+        <span className="identity-badge child">Anak</span>
+        <strong>{profile.name}</strong>
+        <span className="inline-grade">{profile.grade}</span>
+      </div>
+      <div className="relation-meta-row">
+        {profile.contact && <HighlightedMatch match={matchedValue} value={profile.contact} />}
+        <UserSerial match={matchedValue} value={profile.serial} />
+      </div>
+      <div className="relation-status-row">
+        <LeadStatusBadge status={profile.leadStatus} />
+        <LastLoginLine value={profile.lastLoginAt} />
+      </div>
+      <ActivePackageLines profile={profile} />
+    </div>
+  )
+}
+
+function AccountRelationCard({ active = false, matchedValue, mode, onClick, parentName, parentPhone, parentSerial, profile, profiles = [], showNestedParent = true }: {
+  active?: boolean
+  matchedValue?: string
+  mode: 'parent-first' | 'child-first' | 'selected'
+  onClick?: () => void
   parentName: string
   parentPhone: string
-  setOpen: (value: boolean) => void
-  setParentName: (value: string) => void
+  parentSerial?: string
+  profile?: ChildProfile
+  profiles?: ChildProfile[]
+  showNestedParent?: boolean
+}) {
+  const className = ['account-relation-card', mode, active ? 'active' : '', onClick ? 'interactive' : ''].filter(Boolean).join(' ')
+  const body = (
+    <>
+      {(mode === 'parent-first' || mode === 'selected') && (
+        <ParentIdentityBlock matchedValue={matchedValue} name={parentName} phone={parentPhone} serial={parentSerial} />
+      )}
+      {mode === 'parent-first' && profiles.length > 0 && (
+        <div className="relation-nested-list">
+          {profiles.map((child) => <ChildIdentityBlock key={child.id} profile={child} matchedValue={matchedValue} />)}
+        </div>
+      )}
+      {profile && (mode === 'child-first' || mode === 'selected') && (
+        <ChildIdentityBlock profile={profile} matchedValue={matchedValue} />
+      )}
+      {mode === 'child-first' && showNestedParent && (
+        <div className="relation-nested-parent">
+          <ParentIdentityBlock matchedValue={matchedValue} name={parentName} phone={parentPhone} serial={parentSerial} />
+        </div>
+      )}
+      {onClick && <span className="profile-radio" aria-hidden="true" />}
+    </>
+  )
+
+  if (onClick) {
+    return <button className={className} type="button" aria-pressed={active} onClick={onClick}>{body}</button>
+  }
+
+  return <div className={className}>{body}</div>
+}
+
+function ParentUpdatePanel({ parentPhone, setParentPhone, updateState }: {
+  open?: boolean
+  onOpen?: () => void
+  parentPhone: string
+  setOpen?: (value: boolean) => void
   setParentPhone: (value: string) => void
   updateState: ReturnType<typeof getParentUpdateState>
 }) {
   const hasValidPhoneLength = canCheckParentPhone(parentPhone)
 
-  if (!open && updateState.changed) {
-    return (
-      <div className="parent-update-summary">
-        <div>
-          <strong>Data Parent akan diperbarui</strong>
-          <small>{account.name} · {account.phone}</small>
-          <small>Menjadi {updateState.nextName} · {updateState.nextPhone}</small>
-        </div>
-        <button className="inline-action" type="button" onClick={onOpen}>Ubah lagi</button>
-      </div>
-    )
-  }
-
-  if (!open) {
-    return (
-      <button className="inline-action parent-update-trigger" type="button" onClick={onOpen}>Ubah data Parent</button>
-    )
-  }
-
   return (
-    <div className="parent-update-panel">
+    <div className="parent-update-panel always-open">
       <div className="parent-update-head">
         <div>
-          <strong>Update Data Parent</strong>
-          <small>Gunakan jika customer menyampaikan data Parent berubah saat pembelian.</small>
+          <strong>Data Orang Tua</strong>
+          <small>Pastikan no. HP aktif untuk menerima kredensial Anak.</small>
         </div>
-        <button type="button" onClick={() => setOpen(false)} aria-label="Tutup update data Parent"><X size={14} /></button>
       </div>
       <div className="form-fields compact-form">
-        <TextField label="Nama Parent" placeholder="Masukan nama Parent" value={parentName} onChange={setParentName} />
-        <TextField label="No. HP Parent" placeholder="Masukan No. HP Parent terbaru" value={parentPhone} onChange={setParentPhone} />
+        <TextField
+          helper="Ubah hanya jika customer memberi nomor Orang Tua yang benar dan aktif."
+          label="No. HP Orang Tua"
+          placeholder="Masukan no. HP orang tua"
+          value={parentPhone}
+          onChange={setParentPhone}
+        />
       </div>
-      {updateState.registeredToOtherParent ? (
+      {updateState.phoneChanged && !hasValidPhoneLength ? (
+        <Callout variant="warning">
+          <strong>No. HP Orang Tua belum lengkap</strong>
+          <p>Masukkan minimal 8 digit agar perubahan bisa lanjut ke review.</p>
+        </Callout>
+      ) : updateState.registeredToOtherParent && updateState.registeredAccount ? (
         <Callout variant="danger">
-          <strong>Nomor sudah dipakai Parent lain</strong>
+          <strong>Nomor dipakai Orang Tua lain</strong>
+          <p>No. HP {updateState.nextPhone} sudah terdaftar sebagai akun Orang Tua {updateState.registeredAccount.name}. Gunakan nomor lain yang benar dan aktif.</p>
+        </Callout>
+      ) : updateState.phoneChanged ? (
+        <Callout variant="warning">
+          <strong>No. HP Orang Tua berubah</strong>
           <PointList items={[
-            <>Nomor ini melekat ke akun <strong>{updateState.registeredAccount?.name}</strong>.</>,
-            'Jangan update sebelum customer mengonfirmasi akun Parent yang benar.',
+            'Akun Anak bisa berpindah ke Orang Tua lain jika nomor ini berbeda.',
+            'Perubahan ini tidak mengecek database. Pastikan nomor yang diisi benar dan aktif.',
           ]} />
         </Callout>
-      ) : updateState.isChildContact ? (
-        <Callout variant="info">
-          <strong>Nomor sama dengan kontak Child</strong>
-          <p>Ini boleh dilanjutkan karena No. HP Child hanya data profil dan bukan akun login.</p>
-        </Callout>
-      ) : updateState.changed && !hasValidPhoneLength ? (
-        <Callout variant="warning">
-          <strong>No. HP Parent belum lengkap</strong>
-          <p>Masukkan minimal 8 digit agar perubahan bisa dilanjutkan ke review.</p>
-        </Callout>
-      ) : updateState.changed ? (
-        <Callout variant="success">
-          <strong>Data Parent akan diperbarui</strong>
-          <p>Perubahan ini akan dibawa ke review dan diproses bersama transaksi.</p>
-        </Callout>
-      ) : (
-        <Callout>
-          <strong>Belum ada perubahan</strong>
-          <p>Ubah nama atau No. HP Parent jika customer memberikan data baru.</p>
-        </Callout>
-      )}
-
+      ) : null}
     </div>
   )
 }
-
 function ParentBucketHeading({ name, phone, serial }: { name: string; phone: string; serial?: string }) {
   return (
     <div className="resolution-parent-heading">
@@ -2443,156 +2738,98 @@ function ParentBucketHeading({ name, phone, serial }: { name: string; phone: str
           <strong>{name}</strong>
           <span>{phone}</span>
         </div>
-        <div className="candidate-meta"><span className="identity-badge parent">Parent</span><UserSerial value={serial} /></div>
+        <div className="candidate-meta"><span className="identity-badge parent">Orang Tua</span><UserSerial value={serial} /></div>
       </div>
     </div>
   )
 }
-
-function ParentAccountCard({ account, active = false, onClick, variant = 'default' }: { account: ParentProfileAccount; active?: boolean; onClick?: () => void; variant?: 'default' | 'success' }) {
-  const className = [
-    'structure-target resolver-stack-card single parent-result',
-    active ? 'active' : '',
-    variant === 'success' ? 'success' : '',
-  ].filter(Boolean).join(' ')
-  const profileCopy = account.profiles.length > 0 ? `${account.profiles.length} Child tersedia` : 'Belum ada Child'
-  const guidanceCopy = account.profiles.length > 0
-    ? 'Pilih Child tujuan paket di tahap berikutnya.'
-    : 'Buat Child baru sebelum paket diaktifkan.'
-  const content = (
-    <div className="candidate-section parent-section">
-      <span className="identity-avatar parent" aria-hidden="true" />
-      <div className="identity-copy">
-        {variant === 'success' && <span className="parent-card-status"><CheckCircle2 size={14} /> Parent ditemukan</span>}
-        <div className="candidate-heading">
-          <strong className="candidate-name parent-name">{account.name}</strong>
-          <span>{account.phone}</span>
-        </div>
-        <div className="candidate-meta"><span className="identity-badge parent">Parent</span><UserSerial value={account.serial} /></div>
-        <small>{variant === 'success' ? `${profileCopy}. ${guidanceCopy}` : profileCopy}</small>
-      </div>
-    </div>
-  )
-
-  if (onClick) {
-    return <button className={className} type="button" onClick={onClick}>{content}</button>
-  }
-
-  return <div className={`${className} parent-account-preview`}>{content}</div>
-}
-function ChildTargetCandidateCard({ active, hideParentDetail = false, onClick, profile }: { active: boolean; hideParentDetail?: boolean; onClick: () => void; profile: ChildProfile }) {
+function ParentAccountCard({ account, active = false, matchedValue, onClick, showProfiles = true, variant = 'default' }: { account: ParentProfileAccount; active?: boolean; matchedValue?: string; onClick?: () => void; showProfiles?: boolean; variant?: 'default' | 'success' }) {
   return (
-    <button
-      className={active ? 'structure-target resolver-stack-card child-result active' : 'structure-target resolver-stack-card child-result'}
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-    >
-      {!hideParentDetail && (
-        <div className="candidate-parent-inline">
-          <div className="candidate-heading">
-            <strong className="candidate-name parent-name">{profile.parentName}</strong>
-            {profile.parentPhone && <span>{profile.parentPhone}</span>}
-          </div>
-          <div className="candidate-meta"><span className="identity-badge parent">Parent</span><UserSerial value={profile.parentSerial} /></div>
-        </div>
-      )}
-      <div className="candidate-section child-section">
-        <span className="identity-avatar child" aria-hidden="true" />
-        <div className="identity-copy">
-          <div className="candidate-heading">
-            <strong className="candidate-name">{profile.name}</strong>
-            {profile.contact && <span>{profile.contact}</span>}
-          </div>
-          <div className="candidate-meta">
-            <span className="identity-badge child">Child</span>
-            <UserSerial value={profile.serial} />
-          </div>
-          <small className="grade-line">{profile.grade}</small>
-          <ActivePackageLines profile={profile} />
-        </div>
-      </div>
-    </button>
+    <div className={variant === 'success' ? 'parent-account-card success' : 'parent-account-card'}>
+      {variant === 'success' && <span className="parent-card-status"><CheckCircle2 size={14} /> Orang Tua ditemukan</span>}
+      <AccountRelationCard
+        active={active}
+        matchedValue={matchedValue}
+        mode="parent-first"
+        parentName={account.name}
+        parentPhone={account.phone}
+        parentSerial={account.serial}
+        profiles={showProfiles ? account.profiles : []}
+        onClick={onClick}
+      />
+    </div>
   )
 }
-
+function ChildTargetCandidateCard({ active, hideParentDetail = false, matchedValue, onClick, profile }: { active: boolean; hideParentDetail?: boolean; matchedValue?: string; onClick: () => void; profile: ChildProfile }) {
+  return (
+    <AccountRelationCard
+      active={active}
+      matchedValue={matchedValue}
+      mode="child-first"
+      parentName={profile.parentName ?? 'Orang Tua'}
+      parentPhone={profile.parentPhone ?? '-'}
+      parentSerial={profile.parentSerial}
+      profile={profile}
+      showNestedParent={!hideParentDetail}
+      onClick={onClick}
+    />
+  )
+}
 function NewChildTargetCard({ active, hasProfiles, onClick }: { active: boolean; hasProfiles: boolean; onClick: () => void }) {
+  const className = ['account-relation-card', 'child-first', 'new-child-target', 'interactive', active ? 'active' : ''].filter(Boolean).join(' ')
+
   return (
-    <button
-      className={active ? 'structure-target resolver-stack-card child-result new-child-target active' : 'structure-target resolver-stack-card child-result new-child-target'}
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-    >
-      <div className="candidate-section child-section">
-        <span className="identity-avatar new-child" aria-hidden="true"><Plus size={16} /></span>
-        <div className="identity-copy">
-          <div className="candidate-heading">
-            <strong className="candidate-name">Buat Child Baru</strong>
-          </div>
-          <div className="candidate-meta">
-            <span className="identity-badge child">Child</span>
-          </div>
-          <small className="grade-line">{hasProfiles ? 'Gunakan jika Child belum ada di daftar.' : 'Wajib dibuat sebelum paket diaktifkan.'}</small>
+    <button className={className} type="button" aria-pressed={active} onClick={onClick}>
+      <div className="relation-identity child">
+        <div className="relation-title-row">
+          <span className="identity-badge child">Anak</span>
+          <strong>Buat Anak Baru</strong>
         </div>
+        <div className="relation-meta-row">
+          <span className="new-child-inline-icon" aria-hidden="true"><Plus size={14} /></span>
+          <span>{hasProfiles ? 'Belum ada di daftar' : 'Belum punya Anak'}</span>
+        </div>
+        <small className="grade-line">{hasProfiles ? 'Gunakan jika Anak belum ada di daftar.' : 'Wajib dibuat sebelum paket diaktifkan.'}</small>
       </div>
+      <span className="profile-radio" aria-hidden="true" />
     </button>
   )
 }
-function SearchTargetCard({ actionLabel, childCount, parentCount, profile, onAction }: {
+function SearchTargetCard({ actionLabel, matchedValue, profile, onAction }: {
   actionLabel: string
-  childCount: number
-  parentCount: number
+  matchedValue?: string
   profile?: ChildProfile
   onAction: () => void
 }) {
+  if (!profile) return null
+
   return (
-    <div className={profile ? 'search-target-card selected' : 'search-target-card'}>
+    <div className="search-target-card selected">
       <div className="search-target-head">
         <div>
-          <span className="summary-kicker">Hasil pencarian</span>
-          <strong>{profile ? 'Profil terpilih' : 'Pilih profil tujuan'}</strong>
-          <small>{parentCount} Parent · {childCount} Child</small>
-          {!profile && <small>Pilih profil tujuan paket dari daftar hasil.</small>}
+          <span className="summary-kicker">Profil Terpilih</span>
+          <strong>Profil Anak terpilih</strong>
         </div>
         <button type="button" onClick={onAction}>{actionLabel}</button>
       </div>
-      {profile && (
-        <div className="search-target-selected">
-          <div className="selected-entity child">
-            <div className="entity-heading">
-              <span>Child</span>
-              <strong>{profile.name}</strong>
-            </div>
-            <div className="entity-meta-row">
-              <small>{profile.grade}</small>
-              <UserSerial value={profile.serial} />
-            </div>
-            <ActivePackageLines profile={profile} />
-          </div>
-          <div className="selected-entity parent">
-            <div className="entity-heading">
-              <span>Parent</span>
-              <strong>{profile.parentName ?? 'Parent'}</strong>
-            </div>
-            <div className="entity-meta-row">
-              {profile.parentPhone && <small>{profile.parentPhone}</small>}
-              <UserSerial value={profile.parentSerial} />
-            </div>
-          </div>
-        </div>
-      )}
+      <AccountRelationCard
+        matchedValue={matchedValue}
+        mode="child-first"
+        parentName={profile.parentName ?? 'Orang Tua'}
+        parentPhone={profile.parentPhone ?? '-'}
+        parentSerial={profile.parentSerial}
+        profile={profile}
+      />
     </div>
   )
 }
 
-function SelectedTargetSummary({ actionLabel = 'Ubah', onAction, parentName, parentPhone, parentSerial, profile }: { actionLabel?: string; onAction?: () => void; parentName: string; parentPhone: string; parentSerial?: string; profile: ChildProfile }) {
+function SelectedTargetSummary({ actionLabel = 'Ubah', matchedValue, onAction, parentName, parentPhone, parentSerial, profile }: { actionLabel?: string; matchedValue?: string; onAction?: () => void; parentName: string; parentPhone: string; parentSerial?: string; profile: ChildProfile }) {
   return (
     <div className="selected-target-wrapper" aria-label="Profil tujuan paket terpilih">
       <SearchTargetCard
         actionLabel={actionLabel}
-        childCount={1}
-        parentCount={1}
+        matchedValue={matchedValue}
         profile={{ ...profile, parentName, parentPhone, parentSerial }}
         onAction={onAction ?? (() => {})}
       />
@@ -2613,7 +2850,7 @@ function DuplicateProfileWarning({ acknowledged, matches, onAcknowledge, onUsePr
       <strong>Profil mirip sudah ada</strong>
       <PointList items={[
         'Cek lagi apakah paket seharusnya diarahkan ke profil yang sudah ada.',
-        acknowledged ? 'Agent memilih tetap membuat Child baru.' : 'Pilih profil yang benar atau konfirmasi tetap buat profil baru.',
+        acknowledged ? 'Agent memilih tetap membuat Anak baru.' : 'Pilih profil yang benar atau konfirmasi tetap buat profil baru.',
       ]} />
       <div className="duplicate-profile-list">
         {matches.map((profile) => (
@@ -2637,12 +2874,18 @@ function LookupStage({
   contactOwner,
   isBeforeAfterMapping,
   isExplicitMapping,
+  legacyAccountSelected,
   lookupState,
   lookupPickerOpen,
+  parentUpdateName,
+  parentUpdatePhone,
   phone,
+  profileTarget,
+  selectedChildProfileId,
   setAccountStatus,
   setContactOwner,
   selectedChildSearchProfileId,
+  setLegacyAccountSelected,
   setLookupState,
   setLookupPickerOpen,
   setPhone,
@@ -2650,20 +2893,24 @@ function LookupStage({
   setProfileTarget,
   setSelectedChildProfileId,
   setSelectedChildSearchProfileId,
-  setUsesParentIdentity,
-  usesParentIdentity,
 }: {
   accountStatus: AccountStatus | null
   checkNumber: () => void
   contactOwner: ContactOwner
   isBeforeAfterMapping: boolean
   isExplicitMapping: boolean
+  legacyAccountSelected: boolean
   lookupState: LookupState
   lookupPickerOpen: boolean
+  parentUpdateName: string
+  parentUpdatePhone: string
   phone: string
+  profileTarget: ProfileTarget
+  selectedChildProfileId: string
   selectedChildSearchProfileId: string
   setAccountStatus: (value: AccountStatus | null) => void
   setContactOwner: (value: ContactOwner) => void
+  setLegacyAccountSelected: (value: boolean) => void
   setLookupState: (value: LookupState) => void
   setLookupPickerOpen: (value: boolean) => void
   setPhone: (value: string) => void
@@ -2671,8 +2918,6 @@ function LookupStage({
   setProfileTarget: (value: ProfileTarget) => void
   setSelectedChildProfileId: (value: string) => void
   setSelectedChildSearchProfileId: (value: string) => void
-  setUsesParentIdentity: (value: boolean) => void
-  usesParentIdentity: boolean
 }) {
   if (!accountStatus) {
     return (
@@ -2686,56 +2931,83 @@ function LookupStage({
   }
 
   const isExistingFlow = accountStatus === 'existing'
-  const title = isExistingFlow ? 'Cari Akun Ruangguru Aktif Saat Ini' : 'Masukkan no. HP Parent'
-  const selectedLookupProfile = isSearchResolutionLookup(lookupState)
-    ? getChildProfileSearchResults(lookupState).find((profile) => profile.id === selectedChildSearchProfileId)
+  const title = isExistingFlow ? 'Cari Akun / Profil Ruangguru Saat Ini' : 'Masukkan no. HP Orang Tua'
+  const selectedLookupProfile = (isSearchResolutionLookup(lookupState) || lookupState === 'existing-old-account-with-child-profile-contact')
+    ? childProfileSearchResults.find((profile) => profile.id === selectedChildSearchProfileId)
     : undefined
-
+  const selectedLookupParentAccount = selectedLookupProfile ? getParentAccountFromChildProfile(selectedLookupProfile) : null
+  const selectedLookupParentUpdateState = selectedLookupParentAccount ? getParentUpdateState(selectedLookupParentAccount, parentUpdateName, parentUpdatePhone) : null
   return (
     <StagePanel className="divided" step="TAHAP 2" title={title}>
       <div className="lookup-row">
         <input
           value={phone}
-          placeholder="Email / No. HP / User serial"
+          placeholder="No. HP / User serial"
           onChange={(event) => setPhone(event.target.value)}
-          aria-label={isExistingFlow ? 'Email, no. HP, atau user serial akun aktif Ruangguru' : 'Nomor HP orang tua'}
+          aria-label={isExistingFlow ? 'No. HP atau User Serial customer' : 'Nomor HP orang tua'}
         />
         <button type="button" onClick={checkNumber}>Cek Akun</button>
       </div>
       {lookupState === 'idle' && (
         <Callout className="lookup-hint">
           <strong>Arahan untuk Agent</strong>
-          <p>{isExistingFlow ? 'Input email, no. HP, atau user serial akun aktif Ruangguru saat ini.' : 'Input nomor orang tua yang akan menjadi Master Account. Sistem akan memastikan nomor ini belum terdaftar sebagai akun.'}</p>
+          <p>{isExistingFlow ? 'Input No. HP atau User Serial yang diberikan customer.' : 'Input nomor orang tua yang akan menjadi Master Account. Sistem akan memastikan nomor ini belum terdaftar sebagai akun.'}</p>
         </Callout>
       )}
-      {lookupState === 'existing-old-account' && (
-        <FoundAccount
-          contactOwner={contactOwner}
-          isBeforeAfterMapping={isBeforeAfterMapping}
-          isExplicitMapping={isExplicitMapping}
-          phone={phone}
-          setContactOwner={setContactOwner}
-          setUsesParentIdentity={setUsesParentIdentity}
-          usesParentIdentity={usesParentIdentity}
+      {lookupState === 'existing-old-account-with-child-profile-contact' ? (
+        <OldAccountPickerTrigger
+          legacyAccountSelected={legacyAccountSelected}
+          matchedValue={phone}
+          profiles={getOldAccountProfileContactMatches(lookupState)}
+          selectedChildSearchProfileId={selectedChildSearchProfileId}
+          onOpen={() => setLookupPickerOpen(true)}
         />
+      ) : lookupState === 'existing-old-account' && !legacyAccountSelected ? (
+        <OldAccountPickerTrigger
+          legacyAccountSelected={legacyAccountSelected}
+          matchedValue={phone}
+          profiles={[]}
+          selectedChildSearchProfileId=""
+          onOpen={() => setLookupPickerOpen(true)}
+        />
+      ) : lookupState === 'existing-old-account' && (
+        isExplicitMapping || isBeforeAfterMapping ? (
+          <FoundAccount
+            contactOwner={contactOwner}
+            isBeforeAfterMapping={isBeforeAfterMapping}
+            isExplicitMapping={isExplicitMapping}
+            phone={phone}
+            setContactOwner={setContactOwner}
+          />
+        ) : (
+          <OldAccountPickerTrigger
+            legacyAccountSelected={legacyAccountSelected}
+            matchedValue={phone}
+            profiles={[]}
+            selectedChildSearchProfileId=""
+            onOpen={() => setLookupPickerOpen(true)}
+          />
+        )
       )}
-      {isParentProfileLookup(lookupState) && <ParentAccountResult account={getLookupParentAccount(lookupState)!} />}
+
       {isSearchResolutionLookup(lookupState) && (
         <>
           {!selectedLookupProfile && (
             <LookupPickerTrigger
               lookupState={lookupState}
+              matchedValue={phone}
               selectedChildSearchProfileId={selectedChildSearchProfileId}
               onOpen={() => setLookupPickerOpen(true)}
             />
           )}
           {selectedLookupProfile && (
-            <div className="lookup-main-review">
+            <div className="lookup-main-review compact-selected-target">
               <SelectedTargetSummary
                 actionLabel="Ubah"
                 onAction={() => setLookupPickerOpen(true)}
-                parentName={selectedLookupProfile.parentName ?? 'Parent'}
-                parentPhone={selectedLookupProfile.parentPhone ?? '-'}
+                matchedValue={phone}
+                parentName={selectedLookupParentUpdateState?.nextName ?? selectedLookupProfile.parentName ?? 'Orang Tua'}
+                parentPhone={selectedLookupParentUpdateState?.nextPhone ?? selectedLookupProfile.parentPhone ?? '-'}
                 parentSerial={selectedLookupProfile.parentSerial}
                 profile={selectedLookupProfile}
               />
@@ -2743,13 +3015,49 @@ function LookupStage({
           )}
         </>
       )}
-      {lookupState === 'existing-not-registered' && <ExistingNotRegistered setAccountStatus={setAccountStatus} />}
-      {lookupState === 'existing-child-phone' && <ExistingChildPhone setAccountStatus={setAccountStatus} />}
-      {lookupState === 'new-available' && <NewAvailableAccount isChildContact={isChildProfileContact(phone)} phone={phone} />}
-      {lookupState === 'new-registered' && <NewRegisteredAccount phone={phone} setAccountStatus={setAccountStatus} />}
-      {isSearchResolutionLookup(lookupState) && lookupPickerOpen && (
+      {isLookupNoticeState(lookupState) && <LookupNoticeTrigger lookupState={lookupState} phone={phone} onOpen={() => setLookupPickerOpen(true)} />}
+      {lookupState === 'existing-old-account' && lookupPickerOpen && (
+        <OldAccountPickerSheet
+          legacyAccountSelected={legacyAccountSelected}
+          matchedValue={phone}
+          profiles={[]}
+          selectedChildSearchProfileId=""
+          setLegacyAccountSelected={setLegacyAccountSelected}
+          setPackageIntent={setPackageIntent}
+          setProfileTarget={setProfileTarget}
+          setSelectedChildProfileId={setSelectedChildProfileId}
+          setSelectedChildSearchProfileId={setSelectedChildSearchProfileId}
+          onClose={() => setLookupPickerOpen(false)}
+        />
+      )}
+      {lookupState === 'existing-old-account-with-child-profile-contact' && lookupPickerOpen && (
+        <OldAccountPickerSheet
+          legacyAccountSelected={legacyAccountSelected}
+          matchedValue={phone}
+          profiles={getOldAccountProfileContactMatches(lookupState)}
+          selectedChildSearchProfileId={selectedChildSearchProfileId}
+          setLegacyAccountSelected={setLegacyAccountSelected}
+          setPackageIntent={setPackageIntent}
+          setProfileTarget={setProfileTarget}
+          setSelectedChildProfileId={setSelectedChildProfileId}
+          setSelectedChildSearchProfileId={setSelectedChildSearchProfileId}
+          onClose={() => setLookupPickerOpen(false)}
+        />
+      )}
+      {isLookupNoticeState(lookupState) && lookupPickerOpen && (
+        <LookupNoticeSheet
+          lookupState={lookupState}
+          phone={phone}
+          setAccountStatus={setAccountStatus}
+          onClose={() => setLookupPickerOpen(false)}
+        />
+      )}
+      {(isSearchResolutionLookup(lookupState) || isParentProfileLookup(lookupState)) && lookupPickerOpen && (
         <LookupPickerSheet
           lookupState={lookupState}
+          matchedValue={phone}
+          profileTarget={profileTarget}
+          selectedChildProfileId={selectedChildProfileId}
           selectedChildSearchProfileId={selectedChildSearchProfileId}
           setLookupState={setLookupState}
           setPackageIntent={setPackageIntent}
@@ -2763,22 +3071,195 @@ function LookupStage({
   )
 }
 
+function OldAccountPickerTrigger({ legacyAccountSelected, matchedValue, profiles, selectedChildSearchProfileId, onOpen }: {
+  legacyAccountSelected: boolean
+  matchedValue: string
+  profiles: ChildProfile[]
+  selectedChildSearchProfileId: string
+  onOpen: () => void
+}) {
+  const selectedProfile = profiles.find((profile) => profile.id === selectedChildSearchProfileId)
+  const showLegacyAccount = !profiles.some((profile) => profileSerialMatchesInput(profile, matchedValue))
+  const optionCount = profiles.length + (showLegacyAccount ? 1 : 0)
+  const hasSelection = legacyAccountSelected || Boolean(selectedProfile)
+  const selectedKicker = legacyAccountSelected ? 'Akun Terpilih' : selectedProfile ? 'Profil Terpilih' : 'Hasil pencarian'
+  const selectedTitle = legacyAccountSelected ? 'Akun lama terpilih' : selectedProfile ? 'Profil Anak terpilih' : 'Pilih tujuan paket'
+
+  return (
+    <div className="search-target-card">
+      <div className="search-target-head">
+        <div>
+          <span className="summary-kicker">{selectedKicker}</span>
+          <strong>{selectedTitle}</strong>
+          {!hasSelection && <small>{optionCount} pilihan ditemukan dari data yang dimasukkan.</small>}
+          {!hasSelection && <small>Buka daftar untuk memilih akun lama atau profil Anak.</small>}
+        </div>
+        <button type="button" onClick={onOpen}>{hasSelection ? 'Ubah' : 'Lihat'}</button>
+      </div>
+      {legacyAccountSelected && showLegacyAccount && <LegacyAccountCandidateCard matchedValue={matchedValue} />}
+      {selectedProfile && (
+        <AccountRelationCard
+          matchedValue={matchedValue}
+          mode="child-first"
+          parentName={selectedProfile.parentName ?? 'Orang Tua'}
+          parentPhone={selectedProfile.parentPhone ?? '-'}
+          parentSerial={selectedProfile.parentSerial}
+          profile={selectedProfile}
+        />
+      )}
+    </div>
+  )
+}
+
+function OldAccountPickerSheet({ legacyAccountSelected, matchedValue, profiles, selectedChildSearchProfileId, setLegacyAccountSelected, setPackageIntent, setProfileTarget, setSelectedChildProfileId, setSelectedChildSearchProfileId, onClose }: {
+  legacyAccountSelected: boolean
+  matchedValue: string
+  profiles: ChildProfile[]
+  selectedChildSearchProfileId: string
+  setLegacyAccountSelected: (value: boolean) => void
+  setPackageIntent: (value: PackageIntent) => void
+  setProfileTarget: (value: ProfileTarget) => void
+  setSelectedChildProfileId: (value: string) => void
+  setSelectedChildSearchProfileId: (value: string) => void
+  onClose: () => void
+}) {
+  const showLegacyAccount = !profiles.some((profile) => profileSerialMatchesInput(profile, matchedValue))
+  const hasSelection = (showLegacyAccount && legacyAccountSelected) || Boolean(selectedChildSearchProfileId)
+
+  return (
+    <BottomSheet className="lookup-picker-sheet" title="Pilih Tujuan Paket" onClose={onClose}>
+      <ResultSummaryText childCount={profiles.length} matchedValue={matchedValue} oldAccountCount={showLegacyAccount ? 1 : 0} />
+      <OldAccountResolutionResults
+        legacyAccountSelected={legacyAccountSelected}
+        matchedValue={matchedValue}
+        profiles={profiles}
+        selectedChildSearchProfileId={selectedChildSearchProfileId}
+        showLegacyAccount={showLegacyAccount}
+        setLegacyAccountSelected={setLegacyAccountSelected}
+        setPackageIntent={setPackageIntent}
+        setProfileTarget={setProfileTarget}
+        setSelectedChildProfileId={setSelectedChildProfileId}
+        setSelectedChildSearchProfileId={setSelectedChildSearchProfileId}
+      />
+      <button className="sheet-primary" disabled={!hasSelection} type="button" onClick={onClose}>Pilih Tujuan</button>
+    </BottomSheet>
+  )
+}
+
+function LegacyAccountCandidateCard({ active = false, matchedValue, onClick }: { active?: boolean; matchedValue: string; onClick?: () => void }) {
+  const className = ['account-relation-card', 'legacy-account-card', active ? 'active' : '', onClick ? 'interactive' : ''].filter(Boolean).join(' ')
+  const serialMatched = serialMatchesInput(existingAccount.serial, matchedValue)
+  const body = (
+    <>
+      <div className="relation-identity account">
+        <div className="relation-title-row">
+          <span className="identity-badge account">Akun lama</span>
+          <strong>{existingAccount.name}</strong>
+        </div>
+        <div className="relation-meta-row">
+          <HighlightedMatch match={matchedValue} value={existingAccount.phone} />
+          <HighlightedMatch match={serialMatched ? matchedValue : undefined} value={`SN ${existingAccount.serial}`} />
+        </div>
+        <div className="relation-status-row">
+          <LeadStatusBadge status={existingAccount.leadStatus} />
+          <LastLoginLine value={existingAccount.lastLoginAt} />
+        </div>
+        <small className="grade-line">Belum migrasi. Pilih ini jika paket untuk akun lama yang akan dikonversi.</small>
+      </div>
+      {onClick && <span className="profile-radio" aria-hidden="true" />}
+    </>
+  )
+
+  if (onClick) return <button className={className} type="button" aria-pressed={active} onClick={onClick}>{body}</button>
+  return <div className={className}>{body}</div>
+}
+
+function LegacyAccountFoundResult({ matchedValue }: { matchedValue: string }) {
+  return (
+    <div className="search-resolution old-account-resolution">
+      <div className="resolution-group result-list-shell">
+        <span className="resolution-label">Akun lama ditemukan</span>
+        <div className="resolution-profile-groups">
+          <LegacyAccountCandidateCard matchedValue={matchedValue} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function OldAccountResolutionResults({ legacyAccountSelected, matchedValue, profiles, selectedChildSearchProfileId, showLegacyAccount, setLegacyAccountSelected, setPackageIntent, setProfileTarget, setSelectedChildProfileId, setSelectedChildSearchProfileId }: {
+  legacyAccountSelected: boolean
+  matchedValue: string
+  profiles: ChildProfile[]
+  selectedChildSearchProfileId: string
+  showLegacyAccount: boolean
+  setLegacyAccountSelected: (value: boolean) => void
+  setPackageIntent: (value: PackageIntent) => void
+  setProfileTarget: (value: ProfileTarget) => void
+  setSelectedChildProfileId: (value: string) => void
+  setSelectedChildSearchProfileId: (value: string) => void
+}) {
+  const selectLegacyAccount = () => {
+    setSelectedChildProfileId('')
+    setSelectedChildSearchProfileId('')
+    setProfileTarget(null)
+    setPackageIntent(null)
+    setLegacyAccountSelected(true)
+  }
+
+  const selectChildProfile = (profile: ChildProfile) => {
+    setLegacyAccountSelected(false)
+    setProfileTarget('existing')
+    setSelectedChildProfileId('')
+    setSelectedChildSearchProfileId(profile.id)
+    setPackageIntent(null)
+  }
+
+  return (
+    <div className="search-resolution old-account-resolution">
+      <div className="result-section-stack">
+        {showLegacyAccount && (
+          <div className="resolution-group result-list-shell">
+            <span className="resolution-label">Akun lama</span>
+            <div className="resolution-profile-groups">
+              <LegacyAccountCandidateCard active={legacyAccountSelected} matchedValue={matchedValue} onClick={selectLegacyAccount} />
+            </div>
+          </div>
+        )}
+
+        {profiles.length > 0 && (
+          <div className="resolution-group result-list-shell">
+            <span className="resolution-label">Profil Anak</span>
+            <div className="resolution-profile-groups">
+              {profiles.map((profile) => (
+                <ChildTargetCandidateCard
+                  active={selectedChildSearchProfileId === profile.id}
+                  key={profile.id}
+                  matchedValue={matchedValue}
+                  profile={profile}
+                  onClick={() => selectChildProfile(profile)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function FoundAccount({
   contactOwner,
   isBeforeAfterMapping,
   isExplicitMapping,
   phone,
   setContactOwner,
-  setUsesParentIdentity,
-  usesParentIdentity,
 }: {
   contactOwner: ContactOwner
   isBeforeAfterMapping: boolean
   isExplicitMapping: boolean
   phone: string
   setContactOwner: (value: ContactOwner) => void
-  setUsesParentIdentity: (value: boolean) => void
-  usesParentIdentity: boolean
 }) {
   if (isBeforeAfterMapping) {
     return <BeforeAfterMappingPanel contactOwner={contactOwner} phone={phone} setContactOwner={setContactOwner} />
@@ -2787,13 +3268,7 @@ function FoundAccount({
   if (isExplicitMapping) {
     return (
       <>
-        <AccountResult
-          name={existingAccount.name}
-          phone={phone}
-          serial={existingAccount.serial}
-          statusLabel="Akun ditemukan"
-          description="Tentukan kontak akun lama masuk ke data siapa."
-        />
+<LegacyAccountFoundResult matchedValue={phone} />
         <div className="mapping-decision">
           <h3 className="small-title">Kontak akun lama dipakai untuk</h3>
           <div className="segmented-control" role="radiogroup" aria-label="Kontak akun lama dipakai untuk">
@@ -2803,7 +3278,7 @@ function FoundAccount({
               aria-pressed={contactOwner === 'child'}
               onClick={() => setContactOwner('child')}
             >
-              <span>Child</span>
+              <span>Anak</span>
               <small>Isi data manual</small>
             </button>
             <button
@@ -2812,7 +3287,7 @@ function FoundAccount({
               aria-pressed={contactOwner === 'parent'}
               onClick={() => setContactOwner('parent')}
             >
-              <span>Data Parent</span>
+              <span>Data Orang Tua</span>
               <small>Isi data manual</small>
             </button>
           </div>
@@ -2820,16 +3295,16 @@ function FoundAccount({
         <Callout variant={contactOwner === 'parent' ? 'warning' : 'info'}>
           <strong>{contactOwner ? 'Dampak pilihan' : 'Aksi berikutnya'}</strong>
           <PointList items={contactOwner === 'parent' ? [
-            'No. HP akun lama hanya dipakai untuk mengenali akun saat ini.',
-            'Isi Data Parent dan Child sesuai data dari pembeli.',
-            'Pilihan ini tidak berarti akun lama digunakan oleh orang tua.',
+            'No. HP akun lama menjadi prefill No. HP Orang Tua dan tetap bisa diedit.',
+            'Data Anak harus diisi dari informasi pembeli.',
+            'Pastikan nomor Orang Tua benar dan aktif.',
           ] : contactOwner === 'child' ? [
-            'Data akun lama tidak otomatis mengisi Child.',
-            'Isi Data Parent dan Child sesuai data dari pembeli.',
-            'Child tetap tidak bisa login dengan No. HP/email.',
+            'Data akun lama otomatis menjadi prefill Data Anak.',
+            'Isi atau koreksi Data Orang Tua sesuai informasi pembeli.',
+            'Anak tetap tidak bisa login dengan No. HP/email setelah migrasi.',
           ] : [
-            'Pilih Child jika No. HP/email akun lama adalah milik siswa.',
-            'Pilih Data Parent jika No. HP/email akun lama adalah milik orang tua.',
+            'Pilih Anak jika No. HP/email akun lama adalah milik siswa.',
+            'Pilih Data Orang Tua jika No. HP/email akun lama adalah milik orang tua.',
           ]} />
         </Callout>
       </>
@@ -2838,38 +3313,23 @@ function FoundAccount({
 
   return (
     <>
-      <AccountResult
-        name={existingAccount.name}
-        phone={phone}
-        serial={existingAccount.serial}
-        statusLabel="Akun ditemukan"
-        description="Tentukan apakah No. HP/email akun lama adalah informasi orang tua."
-      />
-      <ToggleRow checked={usesParentIdentity} label="Akun ini menggunakan No. HP atau email orang tua" onClick={() => setUsesParentIdentity(!usesParentIdentity)} />
-      {usesParentIdentity && (
-        <Callout variant="warning">
-          <strong>Konsekuensi toggle aktif</strong>
-          <PointList items={[
-            'No. HP/email akun ' + existingAccount.name + ' dipakai untuk mengenali akun lama.',
-            'Toggle ini hanya menandai kontak orang tua, bukan siapa yang memakai akun.',
-          ]} />
-        </Callout>
-      )}
+<LegacyAccountFoundResult matchedValue={phone} />
       <Callout>
         <strong>Arahan untuk Agent</strong>
-        {usesParentIdentity ? (
-          <PointList items={[
-            'Konfirmasi No. HP/email akun adalah milik orang tua.',
-            'Jika bukan, matikan toggle dan isi ulang data sesuai informasi pembeli.',
-          ]} />
-        ) : (
-          <PointList items={[
-            'Biarkan toggle mati jika data akun adalah data anak.',
-            'Lanjutkan dengan mengisi Data Parent dan Child sesuai informasi pembeli.',
-          ]} />
-        )}
+        <PointList items={[
+          'Pastikan ini akun aktif yang akan dibelikan paket.',
+          'Keputusan No. HP akun lama milik anak atau orang tua diisi di Tahap 3.',
+        ]} />
       </Callout>
     </>
+  )
+}
+
+function MigrationIdentityToggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+  return (
+    <div className="migration-identity-toggle">
+      <ToggleRow checked={checked} label="No. HP akun lama adalah milik orang tua" onClick={onChange} />
+    </div>
   )
 }
 
@@ -2884,7 +3344,7 @@ function BeforeAfterMappingPanel({ contactOwner, phone, setContactOwner }: {
         <div className="structure-panel before">
           <span>Sebelum migrasi</span>
           <strong>1 akun lama</strong>
-          <AccountResult name={existingAccount.name} phone={phone} serial={existingAccount.serial} />
+          <AccountResult label="Akun lama" name={existingAccount.name} phone={phone} serial={existingAccount.serial} />
           <dl>
             <div>
               <dt>Email</dt>
@@ -2897,20 +3357,20 @@ function BeforeAfterMappingPanel({ contactOwner, phone, setContactOwner }: {
 
         <div className="structure-panel after">
           <span>Sesudah migrasi</span>
-          <strong>Parent + Child</strong>
+          <strong>Orang Tua + Anak</strong>
           <div className="target-stack">
             <StructureTargetButton
               active={contactOwner === 'parent'}
               description="Kontak akun lama dikenali sebagai milik orang tua."
               label="Pilih"
-              title="Parent"
+              title="Orang Tua"
               onClick={() => setContactOwner('parent')}
             />
             <StructureTargetButton
               active={contactOwner === 'child'}
               description="Kontak akun lama dikenali sebagai milik anak."
               label="Pilih"
-              title="Child"
+              title="Anak"
               onClick={() => setContactOwner('child')}
             />
           </div>
@@ -2920,16 +3380,16 @@ function BeforeAfterMappingPanel({ contactOwner, phone, setContactOwner }: {
       <Callout variant={contactOwner === 'parent' ? 'warning' : 'info'}>
         <strong>{contactOwner ? 'Dampak migrasi' : 'Aksi berikutnya'}</strong>
         <PointList items={contactOwner === 'parent' ? [
-          'Akun lama membantu mengenali customer yang akan dikonversi.',
-          'Data Parent dan Child tetap diisi dari informasi pembeli.',
-          'Username dan PIN anak dikirim ke WhatsApp Parent setelah transaksi berhasil.',
+          'No. HP akun lama menjadi prefill No. HP Orang Tua dan tetap bisa diedit.',
+          'Data Anak harus diisi dari informasi pembeli.',
+          'Username dan PIN anak dikirim ke WhatsApp Orang Tua setelah transaksi berhasil.',
         ] : contactOwner === 'child' ? [
-          'Akun aktif berubah ke struktur baru setelah transaksi berhasil.',
-          'Agent tetap mengisi Data Parent dan Child dari informasi pembeli.',
+          'Data akun lama otomatis menjadi prefill Data Anak.',
+          'Isi atau koreksi Data Orang Tua sesuai informasi pembeli.',
           'No. HP/email anak tersimpan sebagai data profil, bukan akses login.',
         ] : [
-          'Pilih Parent jika kontak akun lama milik orang tua.',
-          'Pilih Child jika kontak akun lama milik siswa.',
+          'Pilih Orang Tua jika kontak akun lama milik orang tua.',
+          'Pilih Anak jika kontak akun lama milik siswa.',
         ]} />
       </Callout>
     </>
@@ -2955,7 +3415,7 @@ function StructureTargetButton({ active, description, label, onClick, title }: {
 }
 
 function MigrationStateSummary({ contactOwner, phone }: { contactOwner: Exclude<ContactOwner, null>; phone: string }) {
-  const contactLabel = contactOwner === 'parent' ? 'Data Parent' : 'Child'
+  const contactLabel = contactOwner === 'parent' ? 'Data Orang Tua' : 'Anak'
   const helper = contactOwner === 'parent' ? 'Isi data dari pembeli di form berikutnya' : 'Isi data dari pembeli di form berikutnya'
 
   return (
@@ -2974,131 +3434,130 @@ function MigrationStateSummary({ contactOwner, phone }: { contactOwner: Exclude<
   )
 }
 
-function ResultStatePanel({ action, actionLabel, impact, status, title, variant = 'info' }: {
-  action?: () => void
-  actionLabel?: string
-  impact: ReactNode[]
-  status: ReactNode[]
-  title: string
-  variant?: CalloutVariant
-}) {
+function getLookupNoticeCopy(lookupState: LookupState, phone: string) {
+  const isSerialInput = isSerialLookupInput(phone)
+
+  if (lookupState === 'existing-not-registered') {
+    if (isSerialInput) {
+      return {
+        title: 'User serial tidak ditemukan',
+        tone: 'danger' as CalloutVariant,
+        summary: 'User serial ' + phone + ' tidak terdaftar sebagai user aktif.',
+        detail: 'Cek kembali user serial atau gunakan No. HP.',
+        actionLabel: 'Pindah ke Belum Punya Akun',
+        nextStatus: 'new' as AccountStatus,
+      }
+    }
+
+    return {
+      title: 'Akun tidak ditemukan',
+      tone: 'danger' as CalloutVariant,
+      summary: 'Nomor ini belum terdaftar sebagai akun Ruangguru.',
+      detail: 'Pakai Belum Punya Akun atau cari No. HP/user serial lain.',
+      actionLabel: 'Pindah ke Belum Punya Akun',
+      nextStatus: 'new' as AccountStatus,
+    }
+  }
+
+  if (lookupState === 'existing-child-phone') {
+    return {
+      title: 'Bukan akun login',
+      tone: 'danger' as CalloutVariant,
+      summary: 'Data ini terdeteksi sebagai kontak Anak.',
+      detail: 'Cari akun aktif lain, atau buat struktur baru jika customer belum punya akun.',
+      actionLabel: 'Pindah ke Belum Punya Akun',
+      nextStatus: 'new' as AccountStatus,
+    }
+  }
+
+  if (lookupState === 'new-registered') {
+    if (isSerialInput) {
+      return {
+        title: 'User serial hanya untuk akun yang sudah daftar',
+        tone: 'danger' as CalloutVariant,
+        summary: 'User serial tidak dipakai untuk membuat akun Orang Tua baru.',
+        detail: 'Pindah ke Sudah Punya Akun untuk mencari tujuan paket dengan user serial.',
+        actionLabel: 'Pindah ke Sudah Punya Akun',
+        nextStatus: 'existing' as AccountStatus,
+      }
+    }
+
+    return {
+      title: 'Nomor sudah terdaftar',
+      tone: 'danger' as CalloutVariant,
+      summary: 'Nomor ini sudah melekat ke akun Ruangguru.',
+      detail: 'Pindah ke Sudah Punya Akun untuk memilih tujuan paket.',
+      actionLabel: 'Pindah ke Sudah Punya Akun',
+      nextStatus: 'existing' as AccountStatus,
+    }
+  }
+
+  return {
+    title: 'Nomor bisa digunakan',
+    tone: 'success' as CalloutVariant,
+    summary: phone ? phone + ' belum terdaftar sebagai akun Ruangguru.' : 'Nomor belum terdaftar sebagai akun Ruangguru.',
+    detail: 'Lanjut isi Data Orang Tua dan Anak.',
+  }
+}
+
+function LookupNoticeTrigger({ lookupState, onOpen, phone }: { lookupState: LookupState; onOpen: () => void; phone: string }) {
+  const copy = getLookupNoticeCopy(lookupState, phone)
+
   return (
-    <Callout className="result-state-panel" icon={variant === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} variant={variant}>
-      <strong>{title}</strong>
-      <div className="result-state-grid">
-        <div>
-          <span>Status</span>
-          <PointList items={status} />
-        </div>
-        <div>
-          <span>Aksi Agent</span>
-          <PointList items={impact} />
-        </div>
-      </div>
-      {action && actionLabel && <button className="inline-action" type="button" onClick={action}>{actionLabel}</button>}
-    </Callout>
+    <button className={['lookup-notice-trigger', copy.tone].join(' ')} type="button" onClick={onOpen}>
+      <span>{copy.title}</span>
+      <small>{copy.summary}</small>
+      <ChevronRight size={16} />
+    </button>
   )
 }
 
-function ExistingNotRegistered({ setAccountStatus }: { setAccountStatus: (value: AccountStatus) => void }) {
-  return (
-    <ResultStatePanel
-      action={() => setAccountStatus('new')}
-      actionLabel="Pindah ke Belum Punya Akun"
-      title="No. HP tidak terdaftar sebagai akun Ruangguru"
-      variant="danger"
-      status={[
-        'Nomor tidak bisa dipakai sebagai akun aktif saat ini.',
-        'Pembelian perlu dibuat lewat struktur Parent + Child baru.',
-      ]}
-      impact={[
-        'Pindahkan ke flow Belum Punya Akun.',
-        'Jika customer merasa sudah punya akun, minta email, no. HP, atau user serial lain.',
-      ]}
-    />
-  )
-}
-
-function ExistingChildPhone({ setAccountStatus }: { setAccountStatus: (value: AccountStatus) => void }) {
-  return (
-    <ResultStatePanel
-      action={() => setAccountStatus('new')}
-      actionLabel="Pindah ke Belum Punya Akun"
-      title="Data yang dimasukkan bukan akun aktif Ruangguru"
-      variant="danger"
-      status={[
-        'Data terdeteksi sebagai kontak Child, bukan akun login.',
-        'Child tidak bisa dipakai sebagai akun pembelian.',
-      ]}
-      impact={[
-        'Cek ulang email, no. HP, atau user serial akun aktif.',
-        <>Pindah ke <strong>Belum Punya Akun</strong> jika data ini akan didaftarkan sebagai Parent baru.</>,
-      ]}
-    />
-  )
-}
-
-function NewAvailableAccount({ isChildContact = false, phone }: { isChildContact?: boolean; phone: string }) {
-  return (
-    <ResultStatePanel
-      title="No. HP bisa digunakan untuk Parent baru"
-      variant="success"
-      status={[
-        <>Nomor {phone} belum terdaftar sebagai akun Ruangguru.</>,
-        isChildContact ? 'Nomor pernah muncul sebagai kontak Child, tapi bukan akun login.' : 'Nomor bisa dipakai untuk membuat struktur baru.',
-      ]}
-      impact={[
-        'Lanjut isi Data Parent dan Child.',
-        'Pastikan data mengikuti informasi yang diberikan pembeli.',
-      ]}
-    />
-  )
-}
-
-function NewRegisteredAccount({ phone, setAccountStatus }: { phone: string; setAccountStatus: (value: AccountStatus) => void }) {
-  const registeredAccount = getRegisteredParentAccount(phone) ?? existingAccount
+function LookupNoticeSheet({ lookupState, onClose, phone, setAccountStatus }: { lookupState: LookupState; onClose: () => void; phone: string; setAccountStatus: (value: AccountStatus) => void }) {
+  const copy = getLookupNoticeCopy(lookupState, phone)
+  const registeredAccount = lookupState === 'new-registered' && !isSerialLookupInput(phone) ? getRegisteredParentAccount(phone) : null
+  const handleAction = () => {
+    if (!copy.nextStatus) return
+    onClose()
+    setAccountStatus(copy.nextStatus)
+  }
 
   return (
-    <>
-      <ResultStatePanel
-        action={() => setAccountStatus('existing')}
-        actionLabel="Pindah ke Sudah Punya Akun"
-        title="No. HP sudah terdaftar sebagai akun Ruangguru"
-        variant="danger"
-        status={[
-          'Nomor sudah melekat ke satu akun Ruangguru.',
-          'Nomor ini tidak perlu dibuat sebagai akun baru.',
-        ]}
-        impact={[
-          'Pindahkan ke flow Sudah Punya Akun.',
-          'Pilih Child tujuan paket atau proses migrasi jika akun belum memakai struktur baru.',
-        ]}
-      />
-      <AccountResult
-        name={registeredAccount.name}
-        phone={phone}
-        serial={registeredAccount.serial}
-        statusLabel="Akun terdaftar"
-        description="Gunakan flow Sudah Punya Akun untuk nomor ini."
-      />
-    </>
+    <BottomSheet className="lookup-notice-sheet" title="Hasil Cek Akun" onClose={onClose}>
+      <Callout className="lookup-notice-card" variant={copy.tone}>
+        <strong>{copy.title}</strong>
+        <p>{copy.summary}</p>
+        <small>{copy.detail}</small>
+      </Callout>
+      {registeredAccount && (
+        <AccountResult
+          name={registeredAccount.name}
+          phone={registeredAccount.phone}
+          serial={registeredAccount.serial}
+          statusLabel="Akun terdaftar"
+        />
+      )}
+      {copy.actionLabel ? (
+        <button className="sheet-primary" type="button" onClick={handleAction}>{copy.actionLabel}</button>
+      ) : (
+        <button className="sheet-primary" type="button" onClick={onClose}>Mengerti</button>
+      )}
+    </BottomSheet>
   )
 }
-
 function AccountResult({ description, label = 'Akun', name, phone, serial, statusLabel }: { description?: string; label?: string; name: string; phone: string; serial?: string; statusLabel?: string }) {
   return (
-    <div className={statusLabel ? 'structure-target resolver-stack-card single account-result account-result-card success' : 'structure-target resolver-stack-card single account-result account-result-card'}>
-      <div className="candidate-section parent-section">
-        <span className="identity-avatar account" aria-hidden="true" />
-        <div className="identity-copy">
-          {statusLabel && <span className="parent-card-status"><CheckCircle2 size={14} /> {statusLabel}</span>}
-          <div className="candidate-heading">
-            <strong className="candidate-name parent-name">{name}</strong>
-            <span>{phone}</span>
-          </div>
-          <div className="candidate-meta"><span className="identity-badge account">{label}</span><UserSerial value={serial} /></div>
-          {description && <small>{description}</small>}
+    <div className={statusLabel ? 'account-relation-card account-result-card success' : 'account-relation-card account-result-card'}>
+      <div className="relation-identity account">
+        {statusLabel && <span className="parent-card-status"><CheckCircle2 size={14} /> {statusLabel}</span>}
+        <div className="relation-title-row">
+          <span className="identity-badge account">{label}</span>
+          <strong>{name}</strong>
         </div>
+        <div className="relation-meta-row">
+          <span>{phone}</span>
+          <UserSerial value={serial} />
+        </div>
+        {description && <small className="grade-line">{description}</small>}
       </div>
     </div>
   )
@@ -3118,58 +3577,62 @@ function AccountForm({
   childPhone,
   grade,
   mode,
-  parentName,
+  migrationIdentityToggle,
   parentPhone,
+  prefilledParentPhone,
   usesParentIdentity,
   setChildEmail,
   setChildName,
   setChildPhone,
   setGrade,
-  setParentName,
   setParentPhone,
 }: AccountFormProps) {
   const isMigration = mode === 'migration'
   const shouldCheckParentPhone = isMigration && !usesParentIdentity
   const parentPhoneAccount = shouldCheckParentPhone ? getRegisteredParentAccount(parentPhone) : null
   const parentPhoneIsCheckable = shouldCheckParentPhone && canCheckParentPhone(parentPhone)
-  const shouldLockParentName = Boolean(parentPhoneAccount)
-  const parentNameValue = parentPhoneAccount?.name ?? parentName
-
+  const parentPhoneChangedFromPrefill = Boolean(
+    usesParentIdentity
+    && prefilledParentPhone
+    && normalizePhoneDigits(parentPhone) !== normalizePhoneDigits(prefilledParentPhone),
+  )
   return (
     <div className="form-fields">
-      <h4>Data Parent</h4>
+      <ActiveDataNote />
+      <h4>Data Orang Tua</h4>
+      {migrationIdentityToggle}
       <TextField
-        helper={usesParentIdentity ? 'Nomor ini dikunci dari akun lama. Data lain tetap diisi sesuai informasi pembeli.' : undefined}
-        label="No. HP Parent"
+        helper={usesParentIdentity ? 'Terisi otomatis dari akun lama. Ubah hanya jika customer memberi nomor Orang Tua yang benar dan aktif.' : 'Pastikan nomor ini adalah nomor yang benar dan aktif.'}
+        label="No. HP Orang Tua"
         placeholder="Masukan no. HP orang tua"
-        readOnly={usesParentIdentity}
         value={parentPhone}
         onChange={setParentPhone}
       />
       {shouldCheckParentPhone && parentPhoneIsCheckable && (
         <ParentPhoneCheckResult account={parentPhoneAccount} phone={parentPhone} />
       )}
-      <TextField
-        helper={shouldLockParentName ? 'Dikunci dari akun yang ditemukan melalui No. HP Parent.' : undefined}
-        label="Nama Parent"
-        placeholder="Masukan nama lengkap orang tua"
-        readOnly={shouldLockParentName}
-        value={parentNameValue}
-        onChange={setParentName}
-      />
-      <h4>Data Child</h4>
-      <TextField label="Nama Lengkap Child" placeholder="Masukan nama lengkap anak" value={childName} onChange={setChildName} />
+      {parentPhoneChangedFromPrefill && (
+        <Callout variant="warning">
+          <strong>No. HP Orang Tua berubah</strong>
+          <PointList items={[
+            'Akun Anak bisa berpindah ke Orang Tua lain jika nomor ini berbeda.',
+            'Perubahan ini tidak mengecek database. Pastikan nomor yang diisi benar dan aktif.',
+          ]} />
+        </Callout>
+      )}
+      <h4>Data Anak</h4>
+      <TextField label="Nama Lengkap Anak" placeholder="Masukan nama lengkap anak" value={childName} onChange={setChildName} />
       <SelectField label="Kelas" value={grade} onChange={setGrade} />
       <TextField
         helper="No. HP anak hanya untuk data profil/kontak, bukan akses login utama. Nomor boleh sama dengan milik orang tua."
-        label="No. HP Child"
-        placeholder="Masukan no. HP anak (opsional)"
+        label="No. HP Anak"
+        placeholder="Masukan no. HP anak"
         value={childPhone}
         onChange={setChildPhone}
       />
       <TextField
         helper="Email anak hanya untuk data profil/kontak, bukan akses login utama. Email boleh sama dengan milik orang tua."
-        label="Email Child"
+        label="Email Anak"
         placeholder="Masukan email anak (opsional)"
         value={childEmail}
         onChange={setChildEmail}
@@ -3177,9 +3640,7 @@ function AccountForm({
       <Callout className="strong">
         <strong>Yang perlu diberitahu ke anak/orang tua</strong>
         <PointList items={[
-          isMigration ? 'Data Parent dan Child diisi sesuai informasi dari pembeli.' : 'Child baru dibuat di bawah Parent.',
-          <>No. HP dan Email anak <strong>tidak bisa digunakan login</strong>.</>,
-          'Username dan PIN dikirim ke WhatsApp Parent setelah transaksi berhasil.',
+          'Username dan PIN dikirim ke WhatsApp Orang Tua setelah transaksi berhasil.',
         ]} />
       </Callout>
     </div>
@@ -3191,7 +3652,7 @@ function ParentPhoneCheckResult({ account, phone }: { account: typeof registered
     return (
       <Callout icon={<CheckCircle2 size={16} />} variant="success">
         <strong>No. HP belum terdaftar sebagai akun Ruangguru</strong>
-        <p>Nomor {phone} dapat digunakan untuk membuat Parent baru.</p>
+        <p>Nomor {phone} dapat digunakan untuk membuat Orang Tua baru.</p>
       </Callout>
     )
   }
@@ -3199,17 +3660,18 @@ function ParentPhoneCheckResult({ account, phone }: { account: typeof registered
   return (
     <>
       <AccountResult
+        label="Orang Tua"
         name={account.name}
         phone={account.phone}
         serial={account.serial}
-        statusLabel="Akun Parent ditemukan"
-        description="No. HP ini sudah bisa dipakai sebagai Parent."
+        statusLabel="Akun Orang Tua ditemukan"
+        description="No. HP ini sudah bisa dipakai sebagai Orang Tua."
       />
       <Callout>
         <strong>Instruksi</strong>
         <PointList items={[
           `Pastikan No. HP ${phone} adalah akun orang tua dan bisa diakses.`,
-          <>Jika lanjut, Child berelasi dengan akun <strong>{account.name}</strong>.</>,
+          <>Jika lanjut, Anak berelasi dengan akun <strong>{account.name}</strong>.</>,
         ]} />
       </Callout>
     </>
@@ -3222,15 +3684,24 @@ type AccountFormProps = {
   childPhone: string
   grade: string
   mode: 'migration' | 'new'
-  parentName: string
+  migrationIdentityToggle?: ReactNode
   parentPhone: string
+  prefilledParentPhone?: string
   usesParentIdentity: boolean
   setChildEmail: (value: string) => void
   setChildName: (value: string) => void
   setChildPhone: (value: string) => void
   setGrade: (value: string) => void
-  setParentName: (value: string) => void
   setParentPhone: (value: string) => void
+}
+
+function ReadonlyTextInput({ label, value }: { label: string; value: string }) {
+  return (
+    <label>
+      <span className="field-label-row"><span>{label}</span></span>
+      <input autoComplete="off" readOnly value={value} />
+    </label>
+  )
 }
 
 function TextField({ helper, label, onChange, placeholder, readOnly = false, value }: {
@@ -3357,35 +3828,28 @@ function ReviewSheet({ accountStatus, childName, consent, grade, lookupState, pa
   const selectedSearchProfile = childProfileSearchResults.find((profile) => profile.id === selectedChildSearchProfileId)
   const parentLabel = usesParentIdentity ? parentName || 'Orang tua dari data akun lama' : parentName || 'Orang tua'
   const parentNumberLabel = usesParentIdentity ? phone : parentPhone || phone || 'yang diisi agent'
-  const parentDisplayName = selectedSearchProfile?.parentName ?? (parentName || parentAccount?.name || parentLabel)
-  const parentDisplayPhone = selectedSearchProfile?.parentPhone ?? (parentPhone || parentAccount?.phone || parentNumberLabel)
+  const parentDisplayName = parentName || selectedSearchProfile?.parentName || parentAccount?.name || parentLabel
+  const parentDisplayPhone = parentPhone || selectedSearchProfile?.parentPhone || parentAccount?.phone || parentNumberLabel
   const targetProfileName = selectedSearchProfile
     ? selectedSearchProfile.name
     : parentAccount
     ? profileTarget === 'existing' && selectedProfile
       ? selectedProfile.name
-      : childName || 'Child baru'
+      : childName || 'Anak baru'
     : isNewAccount || usesParentIdentity
-      ? childName || 'Child baru'
+      ? childName || 'Anak baru'
       : existingAccount.name
   const targetGrade = selectedSearchProfile?.grade ?? (parentAccount && profileTarget === 'existing' && selectedProfile ? selectedProfile.grade : grade || '-')
   const usesExistingProfile = Boolean(selectedSearchProfile || (parentAccount && profileTarget === 'existing' && selectedProfile))
   const reviewType = selectedSearchProfile || parentAccount ? 'Aktivasi paket' : isNewAccount ? 'Pembuatan akun' : 'Konversi akun'
   const title = selectedSearchProfile || parentAccount ? 'Review tujuan paket' : isNewAccount ? 'Review pembuatan akun' : 'Review migrasi akun'
-  const reviewNote = selectedSearchProfile
-    ? 'Paket akan aktif di Child yang ditemukan. Akses profil tidak berubah.'
-    : parentAccount
-    ? usesExistingProfile
-      ? 'Paket akan aktif di profil yang dipilih. Akses profil tidak berubah.'
-      : 'Profil baru akan dibuat sebelum paket diaktifkan.'
-    : isNewAccount
-      ? 'Struktur Parent dan Child baru akan dibuat.'
-      : usesParentIdentity
-        ? 'Data akun lama dipakai sebagai Parent.'
-        : 'Akun aktif akan dikonversi menjadi Child.'
-  const accessValue = usesExistingProfile ? 'Tidak berubah' : 'Username + PIN'
-  const accessCopy = usesExistingProfile ? 'Gunakan akses profil yang sudah ada.' : parentAccount || isNewAccount ? 'Username dan PIN dikirim ke WhatsApp Parent.' : 'Login anak berubah ke Username dan PIN.'
-  const consentCopy = usesExistingProfile ? 'Child dan Parent tujuan paket sudah dikonfirmasi ke customer.' : 'Perubahan akses login dan pemrosesan data sudah dijelaskan ke customer.'
+  const accessCopy = parentAccount || isNewAccount ? 'Username dan PIN dikirim ke WhatsApp Orang Tua.' : 'Login anak berubah ke Username dan PIN.'
+  const parentPhoneWillChange = Boolean(selectedSearchProfile && parentPhone && normalizePhoneDigits(parentPhone) !== normalizePhoneDigits(selectedSearchProfile.parentPhone ?? ''))
+  const changeOverviewItems = [
+    parentPhoneWillChange ? `No. HP Orang Tua diubah dari ${selectedSearchProfile?.parentPhone} ke ${parentPhone}.` : null,
+    !usesExistingProfile ? accessCopy : null,
+  ].filter(Boolean) as string[]
+  const consentCopy = 'Saya sudah memastikan data Orang Tua dan Anak benar, aktif, dan sesuai dengan informasi customer.'
   const reviewProfile: ChildProfile = {
     contact: selectedSearchProfile?.contact ?? selectedProfile?.contact ?? undefined,
     grade: targetGrade,
@@ -3404,7 +3868,6 @@ function ReviewSheet({ accountStatus, childName, consent, grade, lookupState, pa
     <BottomSheet title={title} onClose={onClose}>
       <div className="wizard-review scan-review sheet-review">
         <ReviewTargetCard
-          note={reviewNote}
           parentName={parentDisplayName}
           parentPhone={parentDisplayPhone}
           parentSerial={selectedSearchProfile?.parentSerial ?? parentAccount?.serial}
@@ -3412,17 +3875,10 @@ function ReviewSheet({ accountStatus, childName, consent, grade, lookupState, pa
           typeLabel={reviewType}
         />
 
-        <section className="review-access-card" aria-label="Akses Child">
-          <span>Akses Child</span>
-          <strong>{accessValue}</strong>
-          <p>{accessCopy}</p>
-        </section>
+        {changeOverviewItems.length > 0 && (
+          <ReviewChangeOverview items={changeOverviewItems} />
+        )}
 
-        <section className="review-checklist" aria-label="Yang perlu dipastikan">
-          <h4>Pastikan sebelum lanjut</h4>
-          <ReviewCheckItem>Profil tujuan paket sudah sesuai dengan customer.</ReviewCheckItem>
-          {usesExistingProfile ? <ReviewCheckItem>Akses profil anak tetap mengikuti pengaturan yang sudah ada.</ReviewCheckItem> : <ReviewCheckItem>No. HP/email anak hanya tersimpan sebagai data profil.</ReviewCheckItem>}
-        </section>
 
         <label className="consent-row review-consent">
           <input checked={consent} type="checkbox" onChange={(event) => setConsent(event.target.checked)} />

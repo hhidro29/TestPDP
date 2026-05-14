@@ -271,7 +271,7 @@ h4 {
 
 .content-stack {
   margin-top: -8px;
-  padding-bottom: 86px;
+  padding-bottom: 126px;
 }
 
 .card {
@@ -623,6 +623,23 @@ input[readonly] {
   line-height: 1.3;
 }
 
+.result-summary-text {
+  margin: 0 0 12px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.search-target-head .result-summary-text {
+  margin: 6px 0 0;
+}
+
+.result-summary-text strong {
+  color: #344054;
+  font-weight: 850;
+}
+
 .search-target-head button {
   min-height: 30px;
   padding: 0 11px;
@@ -722,6 +739,16 @@ input[readonly] {
 
 .small-title {
   margin-top: 14px;
+}
+
+.migration-identity-toggle {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.migration-identity-toggle .toggle-row {
+  margin-top: 0;
 }
 
 .mapping-decision {
@@ -1371,6 +1398,55 @@ input[readonly] {
   max-width: 30em;
 }
 
+.review-package-line {
+  display: grid;
+  gap: 2px;
+  margin: 10px 0 8px;
+  padding: 9px 10px;
+  border: 1px solid #d5dee9;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.review-package-line span {
+  color: #667085;
+  font-size: 10.5px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.review-package-line strong {
+  color: #344054;
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+
+.review-change-overview {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #d5dee9;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.review-change-overview span {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.review-change-overview ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
 .review-access-card {
   display: grid;
   gap: 3px;
@@ -1597,6 +1673,7 @@ input[readonly] {
 }
 
 .parent-update-panel,
+.readonly-child-panel,
 .parent-update-summary {
   display: grid;
   gap: 10px;
@@ -1614,6 +1691,7 @@ input[readonly] {
 }
 
 .parent-update-summary strong,
+.readonly-child-panel .parent-update-head strong,
 .parent-update-head strong {
   display: block;
   color: #344054;
@@ -1622,6 +1700,7 @@ input[readonly] {
 }
 
 .parent-update-summary small,
+.readonly-child-panel .parent-update-head small,
 .parent-update-head small {
   display: block;
   margin-top: 3px;
@@ -1632,7 +1711,7 @@ input[readonly] {
 
 .parent-update-head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 28px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   align-items: start;
 }
@@ -1729,6 +1808,11 @@ input[readonly] {
 .resolution-parent-bucket {
   display: grid;
   gap: 8px;
+}
+
+.result-section-stack {
+  display: grid;
+  gap: 12px;
 }
 
 .resolution-profile-groups.grouped {
@@ -2063,6 +2147,233 @@ input[readonly] {
 }
 
 
+
+.account-relation-card {
+  position: relative;
+  scroll-margin-top: 16px;
+  scroll-margin-bottom: 128px;
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid #d5dee9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: inherit;
+  text-align: left;
+}
+
+button.account-relation-card {
+  cursor: pointer;
+}
+
+button.account-relation-card:focus {
+  outline: none;
+}
+
+button.account-relation-card:focus-visible {
+  border-color: #15aeca;
+  box-shadow: inset 0 0 0 1px #15aeca, 0 0 0 3px rgba(21, 174, 202, 0.14);
+}
+
+.account-relation-card.interactive {
+  padding-right: 44px;
+}
+
+.account-relation-card > .profile-radio {
+  position: absolute;
+  top: 16px;
+  right: 14px;
+  flex: 0 0 auto;
+}
+
+.account-relation-card.active > .profile-radio {
+  border: 5px solid #15aeca;
+}
+
+.account-relation-card.interactive:hover {
+  border-color: #9fcfe0;
+  background: #fbfeff;
+}
+
+.account-relation-card.active {
+  border-color: #15aeca;
+  background: #f8fdff;
+  box-shadow: inset 0 0 0 1px #15aeca, 0 4px 10px rgba(21, 174, 202, 0.1);
+}
+
+.account-relation-card.success {
+  border-color: #b7e5c8;
+  background: #f8fffb;
+}
+
+.new-child-inline-icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #eef8fb;
+  color: #087f91;
+}
+
+.account-relation-card.parent-first {
+  background: #fbfdff;
+}
+
+.relation-identity {
+  min-width: 0;
+}
+
+.relation-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.relation-title-row .identity-badge {
+  margin-bottom: 0;
+}
+
+.relation-title-row strong {
+  min-width: 0;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.inline-grade {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.inline-grade::before {
+  content: '·';
+  margin-right: 6px;
+  color: #98a2b3;
+}
+
+.relation-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  margin-top: 8px;
+}
+
+.relation-status-row .last-login-line {
+  margin-top: 0;
+  color: #667085;
+  font-size: 10.5px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.relation-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  margin-top: 7px;
+}
+
+.relation-meta-row .user-serial {
+  margin-top: 0;
+}
+
+.lead-status-badge {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 22px;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.lead-status-badge.assigned-to-me {
+  background: #eafaf0;
+  color: #11783d;
+}
+
+.lead-status-badge.assigned-to-other {
+  background: #fff4e5;
+  color: #b45309;
+}
+
+.lead-status-badge.no-lead {
+  background: #eef2f7;
+  color: #53647a;
+}
+
+.data-chip {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #f2f5f8;
+  color: #475467;
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.data-chip.matched {
+  border: 1px solid #9adbe8;
+  background: #eafafe;
+  color: #08788f;
+}
+
+.relation-identity .grade-line,
+.relation-identity .last-login-line {
+  display: block;
+  margin-top: 6px;
+}
+
+.relation-nested-list,
+.relation-nested-parent {
+  display: grid;
+  gap: 8px;
+  padding-top: 9px;
+  border-top: 1px solid #edf1f5;
+}
+
+.relation-nested-list .relation-identity.child,
+.relation-nested-parent .relation-identity.parent {
+  padding: 9px;
+  border: 1px solid #e4eaf0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.account-relation-card.child-first .relation-nested-parent {
+  margin-top: 0;
+}
+
+.parent-account-card {
+  display: grid;
+  gap: 8px;
+}
+
+.parent-account-card.success {
+  padding: 10px;
+  border: 1px solid #86d69d;
+  border-radius: 8px;
+  background: #f3fff6;
+}
+
 .identity-copy {
   min-width: 0;
 }
@@ -2184,6 +2495,19 @@ input[readonly] {
 
 .identity-copy .grade-line {
   margin-top: 5px;
+}
+
+.last-login-line {
+  display: block;
+  margin-top: 5px;
+  color: #667085;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.selected-entity .last-login-line {
+  margin-top: 6px;
 }
 
 .identity-copy .package-line {
@@ -2454,6 +2778,20 @@ input[readonly] {
   box-shadow: inset 0 0 0 1px #19aed0;
 }
 
+
+.active-data-note {
+  margin: 0 0 10px;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.active-data-note.compact {
+  margin: 4px 0 0;
+  font-size: 10.5px;
+}
+
 .form-fields label {
   display: block;
   margin-top: 10px;
@@ -2615,6 +2953,72 @@ input[readonly] {
 
 .lookup-picker-sheet .callout:last-of-type {
   margin-bottom: 0;
+}
+
+.lookup-notice-trigger {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  width: 100%;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #d5dee9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #344054;
+  text-align: left;
+}
+
+.lookup-notice-trigger.success {
+  border-color: #b7e5c8;
+  background: #f8fffb;
+}
+
+.lookup-notice-trigger.danger {
+  border-color: #ffd0d0;
+  background: #fffafa;
+}
+
+.lookup-notice-trigger span {
+  color: #344054;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.lookup-notice-trigger small {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.lookup-notice-trigger svg {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  color: #98a2b3;
+}
+
+.lookup-notice-sheet {
+  display: grid;
+  gap: 12px;
+}
+
+.lookup-notice-card {
+  margin: 0;
+}
+
+.lookup-notice-card p {
+  margin: 4px 0 0;
+}
+
+.lookup-notice-card small {
+  display: block;
+  margin-top: 6px;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.35;
 }
 
 .sheet-header {
