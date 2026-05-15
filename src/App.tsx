@@ -208,7 +208,9 @@ const parentAccountWithCrossChildContact: ParentProfileAccount = {
   lastLoginAt: '14 Mei 2026, 09:42',
   name: 'Fajar Hidayat',
   phone: '081234700333',
-  profiles: [],
+  profiles: [
+    { contact: '081234701333', grade: 'Kelas 7 SMP', id: 'child-raka-fajar-parent-login', leadStatus: 'assigned-to-me', lastLoginAt: '14 Mei 2026, 09:16', name: 'Raka Hidayat', serial: 'AZMIGD1L0YPTRK33' },
+  ],
   serial: 'AZMIGD1L0YPTFJ33',
 }
 
@@ -333,6 +335,18 @@ const parentLoginAndOtherParentChildContactResults: ChildProfile[] = [
     parentPhone: parentAccountWithChildren.phone,
     parentSerial: parentAccountWithChildren.serial,
     serial: 'AZMIGD1L0YPTSW33',
+  },
+  {
+    contact: '081234700333',
+    grade: 'Kelas 10 SMA',
+    id: 'child-laras-ratih-parent-login-overlap',
+    leadStatus: 'no-lead',
+    lastLoginAt: '10 Mei 2026, 21:03',
+    name: 'Laras Maharani',
+    parentName: 'Ratih Pramesti',
+    parentPhone: '081217003388',
+    parentSerial: 'AZMIGD1L0YPTRTPR',
+    serial: 'AZMIGD1L0YPTLM33',
   },
 ]
 
@@ -2610,7 +2624,7 @@ function AccountTargetSearchSheet({
 }
 
 function DraftAccountSelectorSheet(props: AccountTargetSearchSheetProps) {
-  return <AccountTargetSearchSheet {...props} title={props.accountStatus === 'new' ? 'Cek No. HP Orang Tua' : 'Pilih Profil Anak Tujuan'} />
+  return <AccountTargetSearchSheet {...props} title={props.accountStatus === 'new' ? 'Cek No. HP Orang Tua' : 'Pilih Akun Anak Tujuan'} />
 }
 
 function DraftLookupStage({
@@ -3316,7 +3330,7 @@ function SearchResolutionResults({ lookupState, matchedValue, profileTarget, sel
     ? { ...parentAccountWithChildren, phone: normalizePhoneDigits(matchedValue).length >= 8 ? matchedValue : parentAccountWithChildren.phone }
     : null)
   const directParentPhone = normalizePhoneDigits(directParentAccount?.phone ?? '')
-  const directParentProfiles = directParentAccount
+  const directParentMatchedProfiles = directParentAccount
     ? profileResults.filter((profile) => {
       const profileParentPhone = normalizePhoneDigits(profile.parentPhone ?? '')
       return Boolean(
@@ -3325,6 +3339,11 @@ function SearchResolutionResults({ lookupState, matchedValue, profileTarget, sel
       )
     })
     : []
+  const directParentOwnProfiles = parentLookupAccount ? getParentAccountChildProfiles(parentLookupAccount) : []
+  const directParentProfiles = [
+    ...directParentOwnProfiles,
+    ...directParentMatchedProfiles.filter((profile) => !directParentOwnProfiles.some((ownProfile) => ownProfile.id === profile.id)),
+  ]
   const remainingProfiles = directParentAccount
     ? profileResults.filter((profile) => !directParentProfiles.some((directProfile) => directProfile.id === profile.id))
     : profileResults
@@ -3399,7 +3418,7 @@ function SearchResolutionResults({ lookupState, matchedValue, profileTarget, sel
 
       {remainingProfiles.length > 0 && (
         <div className="resolution-group result-list-shell">
-          <span className="resolution-label">Profil Anak</span>
+          <span className="resolution-label">Akun Anak</span>
           <div className={shouldShowParentBucket ? 'resolution-profile-groups grouped' : 'resolution-profile-groups'}>
             {parentGroups.map((group) => (
               <div className={shouldShowParentBucket ? 'resolution-parent-bucket grouped' : 'resolution-parent-bucket'} key={group.phone}>
@@ -3566,8 +3585,9 @@ function EditableInfoListRow({ initialValue, label, onChange, options, placehold
   const selectRef = useRef<HTMLSelectElement>(null)
   const canEdit = Boolean(onChange)
   const displayValue = committedValue || value
+  const displayText = displayValue || placeholder
   const originalValue = initialValue ?? value
-  const hasChanged = displayValue !== originalValue
+  const hasChanged = Boolean(displayValue) && displayValue !== originalValue
   const selectOptions = options && displayValue && !options.includes(displayValue) ? [displayValue, ...options] : options
 
   useEffect(() => {
@@ -3614,6 +3634,7 @@ function EditableInfoListRow({ initialValue, label, onChange, options, placehold
               if (event.key === 'Enter') finishEditing()
             }}
           >
+            {!draftValue && <option value="" disabled>{placeholder}</option>}
             {selectOptions.map((option) => (
               <option key={option} value={option}>{option}</option>
             ))}
@@ -3634,23 +3655,11 @@ function EditableInfoListRow({ initialValue, label, onChange, options, placehold
     </div>
   ) : null
 
-  if (!displayValue && canEdit && !editing) {
-    return (
-      <div className={editing ? 'editable-info-row empty editing' : 'editable-info-row empty'}>
-        <button className="editable-info-empty-trigger" type="button" onClick={() => setEditing(true)}>
-          <span>{placeholder}</span>
-          <ChevronRight size={18} />
-        </button>
-        {editor}
-      </div>
-    )
-  }
-
   return (
-    <div className={hasChanged ? 'editable-info-row changed' : 'editable-info-row'}>
+    <div className={[hasChanged ? 'editable-info-row changed' : 'editable-info-row', !displayValue ? 'empty' : '', editing ? 'editing' : ''].filter(Boolean).join(' ')}>
       <div className="editable-info-line">
         <span>{label}</span>
-        <strong>{displayValue || '-'}</strong>
+        <strong className={!displayValue ? 'editable-info-placeholder' : undefined}>{displayText}</strong>
         {canEdit && (
           <button type="button" aria-label={editing ? 'Selesai edit ' + label : 'Edit ' + label} onClick={() => editing ? finishEditing() : setEditing(true)}>
             {editing ? <Check size={18} /> : <Pencil size={18} />}
@@ -3715,12 +3724,12 @@ function DraftInvoiceSelectedAccountDetails({ account, changeTargetAction, layou
             {changeTargetAction && <div className="option-six-person-action">{changeTargetAction}</div>}
           </div>
           <div className="editable-info-list">
-            <EditableInfoListRow initialValue={initialChildPhone} label="No. HP" value={childPhone} onChange={setChildPhone} />
-            <EditableInfoListRow initialValue={initialChildEmail} label="Email" value={childEmail} onChange={setChildEmail} />
-            <EditableInfoListRow initialValue={initialChildName} label="Nama" value={childName} onChange={setChildName} />
-            <EditableInfoListRow initialValue={initialChildGrade} label="Kelas" options={GRADE_OPTIONS} value={childGrade} onChange={setChildGrade} />
-            <InfoListStaticRow label="Serial Number">SN {profile.serial}</InfoListStaticRow>
-            <InfoListStaticRow label="Username">{buildPrototypeUsername(childName)}</InfoListStaticRow>
+            <EditableInfoListRow initialValue={initialChildPhone} label="No. HP Anak" value={childPhone} onChange={setChildPhone} />
+            <EditableInfoListRow initialValue={initialChildEmail} label="Email Anak" value={childEmail} onChange={setChildEmail} />
+            <EditableInfoListRow initialValue={initialChildName} label="Nama Anak" value={childName} onChange={setChildName} />
+            <EditableInfoListRow initialValue={initialChildGrade} label="Kelas Anak" options={GRADE_OPTIONS} value={childGrade} onChange={setChildGrade} />
+            <InfoListStaticRow label="Serial Number Anak">SN {profile.serial}</InfoListStaticRow>
+            <InfoListStaticRow label="Username Anak">{buildPrototypeUsername(childName)}</InfoListStaticRow>
           </div>
           {latestPackage && (
             <div className="draft-active-package">
@@ -3741,9 +3750,9 @@ function DraftInvoiceSelectedAccountDetails({ account, changeTargetAction, layou
             </div>
           </div>
           <div className="editable-info-list">
-            <EditableInfoListRow initialValue={account.phone} label="No. HP" value={parentPhoneValue} onChange={setParentUpdatePhone} />
-            <InfoListStaticRow label="Email">{parentEmail}</InfoListStaticRow>
-            <InfoListStaticRow label="Serial Number">SN {account.serial}</InfoListStaticRow>
+            <EditableInfoListRow initialValue={account.phone} label="No. HP Orang Tua" value={parentPhoneValue} onChange={setParentUpdatePhone} />
+            <InfoListStaticRow label="Email Orang Tua">{parentEmail}</InfoListStaticRow>
+            <InfoListStaticRow label="Serial Number Orang Tua">SN {account.serial}</InfoListStaticRow>
           </div>
           {parentUpdateState.registeredToOtherParent && parentUpdateState.registeredAccount ? (
             <Callout variant="danger">
@@ -3768,10 +3777,10 @@ function DraftInvoiceSelectedAccountDetails({ account, changeTargetAction, layou
         <SelectedPackageTargetHero action={changeTargetAction} title={childName} />
         <h4 className="draft-data-subtitle">Data Anak</h4>
         <div className="draft-data-grid">
-          <DraftDataRow icon={<Phone size={15} />} initialValue={initialChildPhone} label="No. HP" value={childPhone} onChange={setChildPhone} />
-          <DraftDataRow icon={<Mail size={15} />} initialValue={initialChildEmail} label="Email" value={childEmail} onChange={setChildEmail} />
-          <DraftDataRow initialValue={initialChildName} label="Nama" value={childName} onChange={setChildName} />
-          <DraftDataRow initialValue={initialChildGrade} label="Kelas" options={GRADE_OPTIONS} value={childGrade} onChange={setChildGrade} />
+          <DraftDataRow icon={<Phone size={15} />} initialValue={initialChildPhone} label="No. HP Anak" value={childPhone} onChange={setChildPhone} />
+          <DraftDataRow icon={<Mail size={15} />} initialValue={initialChildEmail} label="Email Anak" value={childEmail} onChange={setChildEmail} />
+          <DraftDataRow initialValue={initialChildName} label="Nama Anak" value={childName} onChange={setChildName} />
+          <DraftDataRow initialValue={initialChildGrade} label="Kelas Anak" options={GRADE_OPTIONS} value={childGrade} onChange={setChildGrade} />
           <div className="draft-access-note">
             <span>Serial Number</span>
             <strong><UserSerial match={matchedValue} value={profile.serial} /></strong>
@@ -3802,7 +3811,7 @@ function DraftInvoiceSelectedAccountDetails({ account, changeTargetAction, layou
           </div>
         </div>
         <div className="draft-data-grid">
-          <DraftDataRow icon={<Phone size={15} />} initialValue={account.phone} label="No. HP" value={parentPhoneValue} onChange={setParentUpdatePhone} />
+          <DraftDataRow icon={<Phone size={15} />} initialValue={account.phone} label="No. HP Orang Tua" value={parentPhoneValue} onChange={setParentUpdatePhone} />
           <DraftDataRow label="Email" value={parentEmail} />
         </div>
         <div className="draft-access-note parent-serial-line">
@@ -3898,12 +3907,12 @@ function OptionFiveLegacyChildDetails({ changeTargetAction, childEmail, childNam
             {changeTargetAction && <div className="option-six-person-action">{changeTargetAction}</div>}
           </div>
           <div className="editable-info-list">
-            <EditableInfoListRow initialValue={initialChildPhone} label="No. HP" value={childPhoneValue} onChange={setChildPhone} />
-            <EditableInfoListRow initialValue={initialChildEmail} label="Email" value={childEmailValue} onChange={setChildEmail} />
-            <EditableInfoListRow initialValue={initialChildName} label="Nama" value={childNameValue} onChange={setChildName} />
-            <EditableInfoListRow initialValue={initialChildGrade} label="Kelas" options={GRADE_OPTIONS} value={childGradeValue} onChange={setGrade} />
-            <InfoListStaticRow label="Serial Number">SN {existingAccount.serial}</InfoListStaticRow>
-            <InfoListStaticRow label="Username">{buildPrototypeUsername(childNameValue)}</InfoListStaticRow>
+            <EditableInfoListRow initialValue={initialChildPhone} label="No. HP Anak" value={childPhoneValue} onChange={setChildPhone} />
+            <EditableInfoListRow initialValue={initialChildEmail} label="Email Anak" value={childEmailValue} onChange={setChildEmail} />
+            <EditableInfoListRow initialValue={initialChildName} label="Nama Anak" value={childNameValue} onChange={setChildName} />
+            <EditableInfoListRow initialValue={initialChildGrade} label="Kelas Anak" options={GRADE_OPTIONS} value={childGradeValue} onChange={setGrade} />
+            <InfoListStaticRow label="Serial Number Anak">SN {existingAccount.serial}</InfoListStaticRow>
+            <InfoListStaticRow label="Username Anak">{buildPrototypeUsername(childNameValue)}</InfoListStaticRow>
           </div>
         </section>
 
@@ -3916,7 +3925,7 @@ function OptionFiveLegacyChildDetails({ changeTargetAction, childEmail, childNam
               </div>
             </div>
             <div className="editable-info-list">
-              {parentPhoneValue && <InfoListStaticRow label="No. HP">{parentPhoneValue}</InfoListStaticRow>}
+              {parentPhoneValue && <InfoListStaticRow label="No. HP Orang Tua">{parentPhoneValue}</InfoListStaticRow>}
             </div>
           </section>
         )}
@@ -3931,10 +3940,10 @@ function OptionFiveLegacyChildDetails({ changeTargetAction, childEmail, childNam
         <SelectedPackageTargetHero action={changeTargetAction} title={childNameValue} />
         <h4 className="draft-data-subtitle">Data Anak</h4>
         <div className="draft-data-grid">
-          <DraftDataRow icon={<Phone size={15} />} initialValue={initialChildPhone} label="No. HP" value={childPhoneValue} onChange={setChildPhone} />
-          <DraftDataRow icon={<Mail size={15} />} initialValue={initialChildEmail} label="Email" value={childEmailValue} onChange={setChildEmail} />
-          <DraftDataRow initialValue={initialChildName} label="Nama" value={childNameValue} onChange={setChildName} />
-          <DraftDataRow initialValue={initialChildGrade} label="Kelas" options={GRADE_OPTIONS} value={childGradeValue} onChange={setGrade} />
+          <DraftDataRow icon={<Phone size={15} />} initialValue={initialChildPhone} label="No. HP Anak" value={childPhoneValue} onChange={setChildPhone} />
+          <DraftDataRow icon={<Mail size={15} />} initialValue={initialChildEmail} label="Email Anak" value={childEmailValue} onChange={setChildEmail} />
+          <DraftDataRow initialValue={initialChildName} label="Nama Anak" value={childNameValue} onChange={setChildName} />
+          <DraftDataRow initialValue={initialChildGrade} label="Kelas Anak" options={GRADE_OPTIONS} value={childGradeValue} onChange={setGrade} />
           <div className="draft-access-note">
             <span>Serial Number</span>
             <strong><UserSerial match={matchedValue} value={existingAccount.serial} /></strong>
@@ -3993,10 +4002,10 @@ function OptionFiveNewChildDetails({ account, changeTargetAction, childEmail, ch
             {changeTargetAction && <div className="option-six-person-action">{changeTargetAction}</div>}
           </div>
           <div className="editable-info-list">
-            <EditableInfoListRow label="No. HP" placeholder="Masukan nomor HP anak" value={childPhone} onChange={setChildPhone} />
-            <EditableInfoListRow label="Email" placeholder="Masukan email anak" value={childEmail} onChange={setChildEmail} />
-            <EditableInfoListRow label="Nama" placeholder="Masukan nama lengkap anak" value={childName} onChange={setChildName} />
-            <EditableInfoListRow label="Kelas" options={GRADE_OPTIONS} placeholder="Pilih kelas anak" value={grade} onChange={setGrade} />
+            <EditableInfoListRow label="No. HP Anak" placeholder="Masukan nomor HP anak" value={childPhone} onChange={setChildPhone} />
+            <EditableInfoListRow label="Email Anak" placeholder="Masukan email anak" value={childEmail} onChange={setChildEmail} />
+            <EditableInfoListRow label="Nama Anak" placeholder="Masukan nama lengkap anak" value={childName} onChange={setChildName} />
+            <EditableInfoListRow label="Kelas Anak" options={GRADE_OPTIONS} placeholder="Pilih kelas anak" value={grade} onChange={setGrade} />
           </div>
           <DuplicateProfileWarning
             acknowledged={duplicateProfileAcknowledged}
@@ -4015,9 +4024,9 @@ function OptionFiveNewChildDetails({ account, changeTargetAction, childEmail, ch
             </div>
           </div>
           <div className="editable-info-list">
-            <EditableInfoListRow initialValue={account.phone} label="No. HP" value={parentPhoneValue} onChange={setParentUpdatePhone} />
-            <InfoListStaticRow label="Email">{parentEmail}</InfoListStaticRow>
-            <InfoListStaticRow label="Serial Number">SN {account.serial}</InfoListStaticRow>
+            <EditableInfoListRow initialValue={account.phone} label="No. HP Orang Tua" value={parentPhoneValue} onChange={setParentUpdatePhone} />
+            <InfoListStaticRow label="Email Orang Tua">{parentEmail}</InfoListStaticRow>
+            <InfoListStaticRow label="Serial Number Orang Tua">SN {account.serial}</InfoListStaticRow>
           </div>
           {parentUpdateState.registeredToOtherParent && parentUpdateState.registeredAccount ? (
             <Callout variant="danger">
@@ -4066,7 +4075,7 @@ function OptionFiveNewChildDetails({ account, changeTargetAction, childEmail, ch
           </div>
         </div>
         <div className="draft-data-grid">
-          <DraftDataRow initialValue={account.phone} label="No. HP" value={parentPhoneValue} onChange={setParentUpdatePhone} />
+          <DraftDataRow initialValue={account.phone} label="No. HP Orang Tua" value={parentPhoneValue} onChange={setParentUpdatePhone} />
           <DraftDataRow label="Email" value={parentEmail} />
         </div>
         <div className="draft-access-note parent-serial-line">
@@ -4608,7 +4617,7 @@ function OldAccountResolutionResults({ legacyAccountSelected, matchedValue, prof
       <div className="result-section-stack">
         {(showLegacyAccount || profiles.length > 0) && (
           <div className="resolution-group result-list-shell">
-            <span className="resolution-label">Profil Anak</span>
+            <span className="resolution-label">Akun Anak</span>
             <div className="resolution-profile-groups">
               {showLegacyAccount && (
                 <LegacyAccountCandidateCard active={legacyAccountSelected} matchedValue={matchedValue} onClick={selectLegacyAccount} />
@@ -4888,7 +4897,7 @@ function OptionSixNewAccountDetails({ childEmail, childName, childPhone, grade, 
       <section className="draft-selected-person parent" aria-label="Data Orang Tua Baru">
         <h4 className="draft-data-subtitle">Data Orang Tua</h4>
         <div className="editable-info-list">
-          <EditableInfoListRow label="No. HP" placeholder="Masukan nomor HP orang tua" value={parentPhone} onChange={setParentPhone} />
+          <EditableInfoListRow label="No. HP Orang Tua" placeholder="Masukan nomor HP orang tua" value={parentPhone} onChange={setParentPhone} />
         </div>
         {canCheckParentPhone(parentPhone) && <ParentPhoneCheckResult account={parentPhoneAccount} mode="new" phone={parentPhone} />}
       </section>
@@ -4897,10 +4906,10 @@ function OptionSixNewAccountDetails({ childEmail, childName, childPhone, grade, 
         <section className="draft-selected-person child" aria-label="Data Anak Baru">
           <h4 className="draft-data-subtitle">Lengkapi Data Anak</h4>
           <div className="editable-info-list">
-            <EditableInfoListRow label="No. HP" placeholder="Masukan nomor HP anak" value={childPhone} onChange={setChildPhone} />
-            <EditableInfoListRow label="Email" placeholder="Masukan email anak" value={childEmail} onChange={setChildEmail} />
-            <EditableInfoListRow label="Nama" placeholder="Masukan nama lengkap anak" value={childName} onChange={setChildName} />
-            <EditableInfoListRow label="Kelas" options={GRADE_OPTIONS} placeholder="Pilih kelas anak" value={grade} onChange={setGrade} />
+            <EditableInfoListRow label="No. HP Anak" placeholder="Masukan nomor HP anak" value={childPhone} onChange={setChildPhone} />
+            <EditableInfoListRow label="Email Anak" placeholder="Masukan email anak" value={childEmail} onChange={setChildEmail} />
+            <EditableInfoListRow label="Nama Anak" placeholder="Masukan nama lengkap anak" value={childName} onChange={setChildName} />
+            <EditableInfoListRow label="Kelas Anak" options={GRADE_OPTIONS} placeholder="Pilih kelas anak" value={grade} onChange={setGrade} />
           </div>
         </section>
       )}

@@ -1799,8 +1799,8 @@ input[readonly] {
 
 .resolution-label {
   color: #667085;
-  font-size: 12px;
-  font-weight: 850;
+  font-size: 14px;
+  font-weight: 900;
   letter-spacing: 0;
 }
 
@@ -4835,8 +4835,8 @@ button.account-relation-card:focus-visible {
 }
 
 .option-five-search-sheet .resolution-label {
-  font-size: 12px;
-  font-weight: 850;
+  font-size: 14px;
+  font-weight: 900;
   letter-spacing: 0;
 }
 
@@ -4916,7 +4916,7 @@ button.account-relation-card:focus-visible {
 
 .editable-info-line {
   display: grid;
-  grid-template-columns: minmax(84px, 0.8fr) minmax(0, 1fr) 34px;
+  grid-template-columns: minmax(124px, 0.9fr) minmax(0, 1fr) 28px;
   align-items: center;
   gap: 10px;
   padding: 0 12px;
@@ -4939,7 +4939,7 @@ button.account-relation-card:focus-visible {
 }
 
 .editable-info-row.static .editable-info-line {
-  grid-template-columns: minmax(116px, 0.9fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(142px, 0.95fr) minmax(0, 1.05fr);
 }
 
 .editable-info-row.static .editable-info-line strong {
@@ -4950,17 +4950,19 @@ button.account-relation-card:focus-visible {
 .editable-info-row button {
   display: inline-grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: #2f3a4f;
 }
 
-.editable-info-row button:focus-visible,
 .editable-info-row button:hover {
-  background: #effbfe;
+  color: #087f95;
+}
+
+.editable-info-row button:focus-visible {
   color: #087f95;
   outline: 2px solid #86d8e8;
   outline-offset: 1px;
@@ -5009,48 +5011,12 @@ button.account-relation-card:focus-visible {
   background: #ffffff;
 }
 
-.editable-info-row.empty {
-  min-height: 54px;
-  padding: 0;
-}
-
-.editable-info-row.empty .editable-info-empty-trigger {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 28px;
-  align-items: center;
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 54px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: #1f2937;
-  text-align: left;
-}
-
-.editable-info-row.empty .editable-info-empty-trigger span {
-  justify-self: start;
-  min-width: 0;
-  font-size: 13px;
+.editable-info-row.empty .editable-info-line strong {
+  color: #667085;
   font-weight: 500;
-  letter-spacing: 0;
 }
 
-.editable-info-row.empty .editable-info-empty-trigger svg {
-  justify-self: end;
-  color: #2f3a4f;
-}
-
-.editable-info-row.empty .editable-info-empty-trigger:focus-visible,
-.editable-info-row.empty .editable-info-empty-trigger:hover {
-  background: #f7fcfe;
-  color: #087f95;
-  outline: 2px solid #86d8e8;
-  outline-offset: -2px;
-}
-
-.editable-info-row.empty .editable-info-editor {
+.editable-info-row.empty.editing .editable-info-editor {
   margin-bottom: 10px;
 }
 
