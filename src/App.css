@@ -3720,6 +3720,19 @@ button.account-relation-card:focus-visible {
   color: #087f95;
 }
 
+.child-login-access-note > div {
+  display: grid;
+  gap: 6px;
+}
+
+.child-login-access-title {
+  display: block;
+  color: #08788f;
+  font-size: 12.5px;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
 .child-login-access-note ul {
   display: grid;
   gap: 4px;

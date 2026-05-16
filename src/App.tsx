@@ -3968,10 +3968,13 @@ function ChildLoginAccessNotice() {
   return (
     <div className="child-login-access-note">
       <KeyRound size={14} />
-      <ul>
-        <li><strong>No. HP dan email Anak sudah tidak bisa lagi digunakan untuk login.</strong></li>
-        <li>Username dan PIN akan dikirim <strong>otomatis</strong> ke WhatsApp Anak dan Orang Tua.</li>
-      </ul>
+      <div>
+        <strong className="child-login-access-title">Akses Login Anak Akan Berubah</strong>
+        <ul>
+          <li><strong>No. HP dan email Anak sudah tidak bisa lagi digunakan untuk login.</strong></li>
+          <li>Username dan PIN akan dikirim <strong>otomatis</strong> ke WhatsApp Anak dan Orang Tua.</li>
+        </ul>
+      </div>
     </div>
   )
 }
