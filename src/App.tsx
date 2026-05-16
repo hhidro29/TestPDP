@@ -3830,7 +3830,8 @@ function DraftDataRow({ initialValue, label, onChange, options, value }: {
   )
 }
 
-function EditableInfoListRow({ helper, initialValue, label, onChange, onCommit, options, placeholder = '-', value }: {
+function EditableInfoListRow({ editingHelper, helper, initialValue, label, onChange, onCommit, options, placeholder = '-', value }: {
+  editingHelper?: ReactNode | ((draftValue: string) => ReactNode)
   helper?: ReactNode
   initialValue?: string
   label: string
@@ -3851,6 +3852,7 @@ function EditableInfoListRow({ helper, initialValue, label, onChange, onCommit, 
   const originalValue = initialValue ?? value
   const hasChanged = Boolean(displayValue) && displayValue !== originalValue
   const selectOptions = options && displayValue && !options.includes(displayValue) ? [displayValue, ...options] : options
+  const resolvedEditingHelper = typeof editingHelper === 'function' ? editingHelper(draftValue) : editingHelper
 
   useEffect(() => {
     if (!editing) return
@@ -3936,6 +3938,7 @@ function EditableInfoListRow({ helper, initialValue, label, onChange, onCommit, 
       )}
       {helper && !editing && <div className="editable-info-row-helper">{helper}</div>}
       {editor}
+      {resolvedEditingHelper && editing && <div className="editable-info-row-helper editing-helper">{resolvedEditingHelper}</div>}
     </div>
   )
 }
@@ -4001,9 +4004,22 @@ function ParentPhoneInfoListRow({ initialValue, onChange, placeholder, value }: 
       <span>Akses Akun Anak akan berpindah ke No. HP Orang Tua {committedValue}. Pastikan nomor ini aktif dan valid.</span>
     </span>
   ) : null
+  const editingHelper = (nextValue: string) => {
+    const editingChanged = Boolean(initialValue && nextValue && normalizePhoneDigits(nextValue) !== normalizePhoneDigits(initialValue))
+
+    if (!editingChanged) return null
+
+    return (
+      <span className="parent-phone-row-warning changed">
+        <Info size={13} />
+        <span>Akses Akun Anak akan berpindah ke nomor ini setelah data disimpan. Pastikan nomor aktif dan valid.</span>
+      </span>
+    )
+  }
 
   return (
     <EditableInfoListRow
+      editingHelper={editingHelper}
       helper={helper}
       initialValue={initialValue}
       label="No. HP Orang Tua"
