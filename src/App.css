@@ -6600,3 +6600,241 @@ button.account-relation-card:focus-visible {
 .option-seven-account-main + .option-seven-parent-card {
   border-top: 1px solid #e4ebf4;
 }
+
+
+.target-flow-guidance {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 9px 11px;
+  border: 1px solid #b8e2eb;
+  border-radius: 8px;
+  background: #f3fbfd;
+  color: #53647a;
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.target-flow-guidance svg {
+  margin-top: 1px;
+  color: #087f95;
+}
+
+
+.option-seven-new-account-hint {
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid #b8e2eb;
+  border-radius: 8px;
+  background: #f3fbfd;
+  color: #53647a;
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.option-seven-role.child {
+  max-width: 100%;
+}
+
+.new-account-lead strong {
+  color: #8a5a00;
+}
+
+
+.option-seven-link-review {
+  gap: 10px;
+  padding: 12px;
+  border-color: #d7e0ea;
+  background: #ffffff;
+}
+
+.option-seven-link-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.option-seven-link-head strong {
+  color: #344054;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.option-seven-link-head span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #dcfae6;
+  color: #2f6f3e;
+  font-size: 11.5px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.option-seven-linked-child {
+  display: grid;
+  gap: 7px;
+  padding-top: 10px;
+  border-top: 1px solid #e4ebf4;
+}
+
+.option-seven-linked-child strong {
+  color: #344054;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.option-seven-link-review p {
+  margin: 0;
+  padding-top: 2px;
+  color: #667085;
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+
+.option-seven-linked-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.option-seven-linked-title strong {
+  color: #344054;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.option-seven-linked-title small {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+
+.option-seven-link-review {
+  gap: 0;
+}
+
+.option-seven-link-head {
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e4ebf4;
+}
+
+.option-seven-link-list {
+  display: grid;
+  gap: 0;
+}
+
+.option-seven-linked-child {
+  gap: 9px;
+  padding: 12px 0;
+  border-top: 0;
+}
+
+.option-seven-linked-child + .option-seven-linked-child {
+  border-top: 1px solid #e4ebf4;
+}
+
+.option-seven-linked-title {
+  gap: 6px 9px;
+}
+
+.option-seven-linked-title .option-seven-role {
+  min-height: 26px;
+}
+
+.option-seven-linked-child .option-seven-pill-row {
+  gap: 7px;
+}
+
+.option-seven-link-review p {
+  margin-top: 2px;
+  padding-top: 12px;
+  border-top: 1px solid #e4ebf4;
+}
+
+
+.option-seven-link-head {
+  width: 100%;
+  padding: 0 0 12px;
+  border: 0;
+  border-bottom: 1px solid #e4ebf4;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.option-seven-link-review:not(.open) .option-seven-link-head {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.option-seven-link-head span {
+  gap: 5px;
+}
+
+.option-seven-link-head svg {
+  transition: transform 160ms ease;
+}
+
+.option-seven-link-head[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+
+.option-seven-linked-section {
+  margin-top: -2px;
+}
+
+.option-seven-linked-section .option-seven-link-review {
+  border-color: #d7e0ea;
+  background: #ffffff;
+}
+
+
+.option-seven-new-account-hint.subtle {
+  padding: 0 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #667085;
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.new-account-lead-strip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: start;
+  padding: 9px 11px;
+  border: 1px solid #f7d89a;
+  border-radius: 8px;
+  background: #fffaf0;
+  color: #8a5a00;
+  font-size: 11.5px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.new-account-lead-strip svg {
+  margin-top: 1px;
+  flex: 0 0 auto;
+}

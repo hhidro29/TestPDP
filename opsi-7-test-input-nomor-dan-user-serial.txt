@@ -1,0 +1,221 @@
+OPSI 7 - LINK, NOMOR, DAN USER SERIAL UNTUK UJI COBA SEMUA SKENARIO
+Tanggal: 21 Mei 2026
+
+Link prototype:
+- Opsi 7: http://127.0.0.1:5173/?option=7
+
+Catatan cara pakai:
+1. Buka link prototype.
+2. Pilih "Sudah punya akun" atau "Belum punya akun" sesuai grup skenario.
+3. Di halaman Draft Invoice, klik "Pilih Akun Tujuan" untuk masuk ke halaman Akun tujuan pembelian.
+4. Pilih metode pembelian, copy input di kolom Input, lalu klik "Cek Akun".
+5. Untuk metode Sudah Punya Akun, input bisa No. HP atau User Serial.
+6. Untuk metode Belum Punya Akun, pakai No. HP Orang Tua. User Serial hanya untuk akun yang sudah daftar.
+
+============================================================
+CATATAN KHUSUS OPSI 7
+============================================================
+
+- Pemilihan akun tujuan dilakukan di halaman terpisah: Akun tujuan pembelian.
+- Stepper halaman: Cari Akun / Orang Tua / Anak / Konfirmasi untuk metode Sudah punya akun.
+- Untuk metode Belum punya akun: Orang Tua / Anak / Konfirmasi.
+- Data Orang Tua dan Anak diperiksa serta diedit di halaman Akun tujuan pembelian.
+- Draft Invoice hanya menampilkan overview tujuan pembelian.
+- Jika ada akun Anak parentless yang ikut ditautkan, Draft Invoice menampilkan section terpisah: Akun Anak Terkait. Section ini collapsible dan menampilkan nama, kelas, No. HP, dan Serial Number.
+
+============================================================
+A. METODE: SUDAH PUNYA AKUN
+============================================================
+
+01. Akun anak lama / belum punya parent info
+- Input No. HP: 081234567890
+- User Serial: AZMIGD1L0YPTBMAR
+- Expected: 1 Akun Anak Keisha Azzahra. Tidak menampilkan informasi Orang Tua jika data parent kosong.
+
+02. Akun lama + nomor juga muncul sebagai kontak Anak di akun parent lain
+- Input No. HP: 081234700888
+- User Serial Anak overlap: AZMIGD1L0YPTB888
+- Expected: Akun Anak lama dan/atau Anak Bima Arya sebagai hasil yang bisa dipilih.
+
+03. Ketemu 1 Akun Anak dari No. HP Anak
+- Input No. HP: 081234700111
+- User Serial Anak: AZMIGD1L0YPTB111
+- Expected: 1 Akun Anak Rafa Alfarizi, parent Nadia Rahma.
+
+04. Beberapa Akun Anak dalam 1 Orang Tua yang sama
+- Input No. HP: 081234700555
+- User Serial Anak 1: AZMIGD1L0YPTXIGT
+- User Serial Anak 2: AZMIGD1L0YPTSBPT
+- Expected: Xiera Gentika dan Salsabila Putri dalam parent Agus Salim.
+
+05. Beberapa Akun Anak di beberapa Orang Tua berbeda
+- Input No. HP: 081234700666
+- User Serial Anak 1: AZMIGD1L0YPTRAXP
+- User Serial Anak 2: AZMIGD1L0YPTSBXP
+- User Serial Anak 3: AZMIGD1L0YPTKZZA
+- Expected: beberapa Anak lintas parent.
+
+06. Nomor cocok sebagai login Orang Tua dan juga kontak Anak dalam relasi yang sama
+- Input No. HP: 081234700777
+- User Serial Anak 1: AZMIGD1L0YPTXIMX
+- User Serial Anak 2: AZMIGD1L0YPTSBMX
+- User Serial Orang Tua: AZMIGD1L0YPTB022
+- Expected: hasil menampilkan anak-anak dengan No. HP Orang Tua/Anak yang match.
+
+07. Siswa sudah pernah beli, No. HP Anak dan No. HP Orang Tua sama
+- Input No. HP: 081234700889
+- User Serial Anak: AZMIGD1L0YPTAL89
+- User Serial Orang Tua: AZMIGD1L0YPTRN89
+- Expected: 1 Akun Anak Alya Putri dengan parent Rina Putri. Bisa dipakai untuk testing update No. HP Orang Tua.
+
+08. Ketemu akun Orang Tua yang punya beberapa Anak
+- Input No. HP: 081276540022
+- User Serial Orang Tua: AZMIGD1L0YPTB022
+- User Serial Anak 1: AZMIGD1L0YPTXIGT
+- User Serial Anak 2: AZMIGD1L0YPTSBPT
+- Expected: parent Agus Salim dengan beberapa Akun Anak.
+
+09. Ketemu akun Orang Tua dengan 1 Anak
+- Input No. HP: 081381240015
+- User Serial Orang Tua: AZMIGD1L0YPTB015
+- User Serial Anak: AZMIGD1L0YPTB111
+- Expected: parent Nadia Rahma dengan 1 Akun Anak Rafa Alfarizi.
+
+10. Ketemu akun Orang Tua tapi belum punya Anak
+- Input No. HP: 081399880044
+- User Serial Orang Tua: AZMIGD1L0YPTB044
+- Expected: parent Maya Lestari, belum punya Akun Anak. Agent bisa Tambah Akun Anak Baru.
+
+11. Ketemu 1 akun Orang Tua dengan 2 Anak + 1 akun Anak dari parent berbeda
+- Input No. HP: 081234700334
+- User Serial Orang Tua: AZMIGD1L0YPTDM34
+- User Serial Anak parent Dimas 1: AZMIGD1L0YPTAL34
+- User Serial Anak parent Dimas 2: AZMIGD1L0YPTNL34
+- User Serial Anak parent lain: AZMIGD1L0YPTBY34
+- Expected: 2 Akun Anak dengan No. HP Orang Tua 081234700334 dan 1 Akun Anak dengan No. HP Anak 081234700334.
+
+12. Ketemu 1 akun Orang Tua + 3 Akun Anak yang parent-nya berbeda
+- Input No. HP: 081234700333
+- User Serial Orang Tua: AZMIGD1L0YPTFJ33
+- User Serial Anak parent Fajar: AZMIGD1L0YPTRK33
+- User Serial Anak parent Nadia: AZMIGD1L0YPTNQ33
+- User Serial Anak parent Agus: AZMIGD1L0YPTSW33
+- User Serial Anak parent Ratih: AZMIGD1L0YPTLM33
+- Expected: parent Fajar Hidayat muncul dengan anaknya, dan hasil anak lain dari parent berbeda juga muncul.
+
+13. Nomor tidak terdaftar sebagai akun aktif
+- Input No. HP: 089900001234
+- Expected: tidak ditemukan di metode Sudah Punya Akun. Agent diarahkan ke Belum Punya Akun.
+
+14. User Serial tidak ditemukan
+- Input User Serial: AZMIGD1L0YPTB999
+- Expected: User Serial tidak ditemukan / tidak terdaftar sebagai user aktif.
+
+============================================================
+B. METODE: BELUM PUNYA AKUN
+============================================================
+
+01. Nomor Orang Tua tersedia untuk daftar baru
+- Input No. HP Orang Tua: 089900001234
+- Expected: nomor bisa dipakai untuk daftar akun baru, lalu form Data Orang Tua dan Anak muncul.
+
+02. Nomor pernah muncul sebagai kontak Anak, tapi bukan akun login
+- Input No. HP Orang Tua: 081234700111
+- Expected: nomor tetap boleh dipakai untuk akun Orang Tua baru karena bukan akun login.
+
+03. Nomor sudah terdaftar sebagai akun Orang Tua Agus Salim
+- Input No. HP Orang Tua: 081276540022
+- Expected: harus pindah ke metode Sudah Punya Akun.
+
+04. Nomor sudah terdaftar sebagai akun Orang Tua Nadia Rahma
+- Input No. HP Orang Tua: 081381240015
+- Expected: harus pindah ke metode Sudah Punya Akun.
+
+05. Nomor sudah terdaftar sebagai akun Orang Tua Maya Lestari
+- Input No. HP Orang Tua: 081399880044
+- Expected: harus pindah ke metode Sudah Punya Akun.
+
+06. User Serial tidak dipakai untuk daftar baru
+- Input User Serial: AZMIGD1L0YPTBMAR
+- Expected: muncul info bahwa User Serial hanya untuk metode Sudah Punya Akun.
+
+07. Nomor Orang Tua baru juga dipakai oleh akun Anak parentless
+- Input No. HP Orang Tua: 081234567890
+- Akun Anak terkait:
+  - Keisha Azzahra | Kelas 10 SMA | SN AZMIGD1L0YPTBMAR
+  - Rania Azzahra | Kelas 7 SMP | SN AZMIGD1L0YPTRNIA
+- Expected di halaman pilih akun:
+  - Sistem menampilkan daftar akun Anak yang bisa ditautkan ke Orang Tua baru.
+  - Agent bisa memilih lebih dari 1 akun Anak terkait.
+  - Memilih akun terkait tidak otomatis mengisi form Data Anak baru.
+  - Agent tetap harus melengkapi Data Anak yang akan menerima paket secara manual.
+- Expected di Draft Invoice:
+  - Tujuan Pembelian Paket menampilkan Akun Anak Baru sebagai tujuan paket.
+  - Muncul section terpisah "Akun Anak Terkait" yang collapsible.
+  - Section tersebut menampilkan jumlah akun, nama Anak, kelas, No. HP, dan Serial Number.
+  - Copy konsekuensi: akun terkait akan berada di Orang Tua baru setelah pembelian berhasil.
+
+============================================================
+C. UPDATE NO. HP ORANG TUA DI HALAMAN DATA TERPILIH
+============================================================
+
+Gunakan salah satu skenario Sudah Punya Akun yang sudah memilih Akun Anak, misalnya:
+- 081234700889 -> pilih Alya Putri
+- 081234700111 -> pilih Rafa Alfarizi
+- 081276540022 -> pilih salah satu Anak milik Agus Salim
+
+Input untuk field No. HP Orang Tua:
+
+01. Nomor aman, belum terdaftar
+- Input No. HP baru: 085297353132
+- Expected: perubahan diterima. Warning akses login Anak muncul setelah submit edit.
+
+02. Nomor sama dengan kontak Anak, boleh karena hanya data profil
+- Input No. HP baru: 081234700555
+- Expected: boleh dipakai, tidak diblokir sebagai akun login parent.
+
+03. Nomor sudah dipakai akun Orang Tua lain
+- Input No. HP baru: 081298765432
+- Expected: harus diblokir karena sudah dipakai akun Orang Tua lain.
+
+============================================================
+D. FORMAT VALIDATION USER SERIAL
+============================================================
+
+01. Lowercase
+- Input: azmigd1l0yptbmar
+- Expected: dinormalisasi uppercase lalu lookup.
+
+02. Ada spasi di depan/belakang
+- Input:  AZMIGD1L0YPTBMAR  
+- Expected: trim spasi lalu lookup.
+
+03. Copy dari chip dengan label SN
+- Input: SN AZMIGD1L0YPTBMAR
+- Expected: strip label SN lalu lookup.
+
+04. Terlalu pendek
+- Input: AZMIGD1L0YPT
+- Expected: format terlalu pendek / tidak ditemukan.
+
+05. Karakter spesial
+- Input: AZMIGD1L0YPTBMAR!!
+- Expected: format invalid atau dinormalisasi sesuai rule prototype.
+
+06. Kosong
+- Input: [kosong]
+- Expected: CTA disabled atau required state.
+
+============================================================
+E. DATA INPUT UNTUK SIMULASI DAFTAR BARU
+============================================================
+
+Gunakan saat metode Belum Punya Akun dan nomor Orang Tua tersedia.
+
+Nama lengkap Anak: [isi nama anak]
+Kelas: [pilih kelas]
+Nomor HP Anak: [isi No. HP siswa]
+Email Anak: [isi email siswa]
+Nama Orang Tua: [tidak perlu diinput jika field nama parent disembunyikan]
+WA Orang Tua: 089900001234
+Asal Sekolah: [placeholder jika dibutuhkan di skenario test]

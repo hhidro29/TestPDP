@@ -1979,22 +1979,29 @@ function PurchasePurposeCard({
     const selectedParentlessProfiles = parentlessChildProfiles.filter((profile) => selectedParentlessChildIds.includes(profile.id))
 
     return (
-      <SectionCard className="purpose-card option-seven-overview-card" title="Tujuan Pembelian Paket">
-        <OptionSevenTargetOverview
-          childEmail={overviewChildEmail}
-          childGrade={overviewChildGrade}
-          childName={overviewChildName}
-          childPhone={overviewChildPhone}
-          childSerial={overviewChildSerial}
-          childLeadStatus={overviewChildLeadStatus}
-          parentEmail={overviewParentEmail}
-          parentName={overviewParentName}
-          parentPhone={overviewParentPhone}
-          parentSerial={overviewParentSerial}
-          linkedParentlessChildren={selectedParentlessProfiles}
-          onChangeTarget={openOptionFiveTargetPicker}
-        />
-      </SectionCard>
+      <>
+        <SectionCard className="purpose-card option-seven-overview-card" title="Tujuan Pembelian Paket">
+          <OptionSevenTargetOverview
+            childEmail={overviewChildEmail}
+            childGrade={overviewChildGrade}
+            childName={overviewChildName}
+            childPhone={overviewChildPhone}
+            childSerial={overviewChildSerial}
+            childLeadStatus={overviewChildLeadStatus}
+            isNewAccount={accountStatus === 'new'}
+            parentEmail={overviewParentEmail}
+            parentName={overviewParentName}
+            parentPhone={overviewParentPhone}
+            parentSerial={overviewParentSerial}
+            onChangeTarget={openOptionFiveTargetPicker}
+          />
+        </SectionCard>
+        {selectedParentlessProfiles.length > 0 && (
+          <SectionCard className="purpose-card option-seven-linked-section" title="Akun Anak Terkait">
+            <OptionSevenLinkedAccountsReview linkedParentlessChildren={selectedParentlessProfiles} />
+          </SectionCard>
+        )}
+      </>
     )
   }
 
@@ -2271,27 +2278,29 @@ function AccountTargetSearchTrigger({ className = '', disabled = false, helper, 
   )
 }
 
-function OptionSevenTargetOverview({ childEmail, childGrade, childLeadStatus = 'no-lead', childName, childPhone, childSerial, linkedParentlessChildren = [], parentEmail, parentName, parentPhone, parentSerial, onChangeTarget }: {
+function OptionSevenTargetOverview({ childEmail, childGrade, childLeadStatus = 'no-lead', childName, childPhone, childSerial, isNewAccount = false, parentEmail, parentName, parentPhone, parentSerial, onChangeTarget }: {
   childEmail?: string
   childGrade?: string
   childLeadStatus?: LeadAssignmentStatus
   childName: string
   childPhone?: string
   childSerial?: string
-  linkedParentlessChildren?: ChildProfile[]
+  isNewAccount?: boolean
   parentEmail?: string
   parentName?: string
   parentPhone: string
   parentSerial?: string
   onChangeTarget: () => void
 }) {
+  const parentDisplayName = parentName || (isNewAccount ? 'Orang Tua baru' : 'Data orang tua')
+
   return (
     <div className="option-seven-overview">
       <div className="option-seven-account-card">
         <div className="option-seven-account-main">
           <div className="option-seven-account-head">
             <div className="option-seven-account-title">
-              <span className="option-seven-role child">Anak</span>
+              <span className="option-seven-role child">{isNewAccount ? 'Anak Baru' : 'Anak'}</span>
               <strong>{childName}</strong>
               {childGrade && <small>{childGrade}</small>}
             </div>
@@ -2307,7 +2316,7 @@ function OptionSevenTargetOverview({ childEmail, childGrade, childLeadStatus = '
         <div className="option-seven-parent-card">
           <div className="option-seven-account-title">
             <span className="option-seven-role parent">Orang Tua</span>
-            <strong>{parentName || 'Data orang tua'}</strong>
+            <strong>{parentDisplayName}</strong>
           </div>
           <div className="option-seven-pill-row">
             {parentPhone && <span className="option-seven-data-pill">{parentPhone}</span>}
@@ -2316,17 +2325,41 @@ function OptionSevenTargetOverview({ childEmail, childGrade, childLeadStatus = '
           </div>
         </div>
       </div>
-      <LeadStatusBlock status={childLeadStatus} />
-      {linkedParentlessChildren.length > 0 && (
-        <div className="option-seven-link-review">
-          <span>Proses akun</span>
-          <strong>{linkedParentlessChildren.length} akun anak akan ditautkan ke Orang Tua baru</strong>
+      {isNewAccount && <p className="option-seven-new-account-hint subtle">Akun baru akan dibuat dari data ini setelah pembelian berhasil.</p>}
+      {isNewAccount ? <NewAccountLeadStatusBlock /> : <LeadStatusBlock status={childLeadStatus} />}
+
+    </div>
+  )
+}
+
+function OptionSevenLinkedAccountsReview({ linkedParentlessChildren }: { linkedParentlessChildren: ChildProfile[] }) {
+  const [linkedAccountsOpen, setLinkedAccountsOpen] = useState(false)
+
+  return (
+    <div className={linkedAccountsOpen ? 'option-seven-link-review open' : 'option-seven-link-review'}>
+      <button className="option-seven-link-head" type="button" aria-expanded={linkedAccountsOpen} onClick={() => setLinkedAccountsOpen(!linkedAccountsOpen)}>
+        <strong>Akun anak yang akan ditautkan</strong>
+        <span>{linkedParentlessChildren.length} akun <ChevronDown size={14} aria-hidden="true" /></span>
+      </button>
+      {linkedAccountsOpen && (
+        <>
           <div className="option-seven-link-list">
             {linkedParentlessChildren.map((profile) => (
-              <small key={profile.id}>{profile.name} - {profile.grade} - No. HP Anak {profile.contact}</small>
+              <div className="option-seven-linked-child" key={profile.id}>
+                <div className="option-seven-linked-title">
+                  <span className="option-seven-role child">Anak</span>
+                  <strong>{profile.name}</strong>
+                  {profile.grade && <small>{profile.grade}</small>}
+                </div>
+                <div className="option-seven-pill-row">
+                  {profile.contact && <span className="option-seven-data-pill highlight">{profile.contact}</span>}
+                  <span className="option-seven-data-pill">SN {profile.serial}</span>
+                </div>
+              </div>
             ))}
           </div>
-        </div>
+          <p>Akun ini akan berada di Orang Tua baru setelah pembelian berhasil.</p>
+        </>
       )}
     </div>
   )
@@ -3141,21 +3174,8 @@ function AccountTargetSelectionPage({
     const nextIds = selectedParentlessChildIds.includes(profile.id)
       ? selectedParentlessChildIds.filter((id) => id !== profile.id)
       : [...selectedParentlessChildIds, profile.id]
-    const nextFirstProfile = parentlessChildMatches.find((item) => item.id === nextIds[0])
 
     setSelectedParentlessChildIds(nextIds)
-    if (nextFirstProfile) {
-      setChildName(nextFirstProfile.name)
-      setGrade(nextFirstProfile.grade)
-      setChildPhone(nextFirstProfile.contact ?? '')
-      setChildEmail(buildPrototypeEmail(nextFirstProfile.name, 'email.anak@gmail.com'))
-    } else {
-      setChildName('')
-      setGrade('')
-      setChildPhone('')
-      setChildEmail('')
-    }
-
     setParentlessRelationConfirmed(false)
     setTargetStepErrorVisible(false)
     clearParentConfirmation()
@@ -3398,10 +3418,6 @@ function AccountTargetSelectionPage({
 
         {accountStatus === 'existing' && activeTargetStep === 'search' && (
           <>
-            <div className="target-page-intro compact">
-              <strong>Cari akun anak tujuan paket</strong>
-              <p>Gunakan No. HP Anak, No. HP Orang Tua, atau User Serial.</p>
-            </div>
             <DraftLookupStage
               accountStatus={accountStatus}
               checkNumber={checkNumber}
@@ -3424,6 +3440,10 @@ function AccountTargetSelectionPage({
               setSelectedChildProfileId={setSelectedChildProfileId}
               setSelectedChildSearchProfileId={setSelectedChildSearchProfileId}
             />
+            <div className="target-flow-guidance">
+              <Info size={14} aria-hidden="true" />
+              <span>Jika Anak/Orang Tua pernah punya akun atau datanya ada di CRM, cari lalu pilih Akun Anak yang akan menerima paket.</span>
+            </div>
           </>
         )}
 
@@ -3497,14 +3517,14 @@ function ConditionCustomerModal({ accountStatus, onClose, onSelect }: { accountS
           <button className={accountStatus === 'existing' ? 'active' : ''} type="button" onClick={() => onSelect('existing')}>
             <span className="segment-copy">
               <strong>Sudah punya akun</strong>
-              <small>Customer pernah punya akun Ruangguru, pernah berlangganan, atau datanya sudah ada di CRM.</small>
+              <small>Anak/Orang Tua pernah punya akun Ruangguru, pernah berlangganan, atau datanya sudah ada di CRM.</small>
             </span>
             <span className="segment-radio" aria-hidden="true" />
           </button>
           <button className={accountStatus === 'new' ? 'active' : ''} type="button" onClick={() => onSelect('new')}>
             <span className="segment-copy">
               <strong>Belum punya akun</strong>
-              <small>Customer belum pernah punya akun Ruangguru dan datanya belum ada di CRM.</small>
+              <small>Anak/Orang Tua belum pernah punya akun Ruangguru dan datanya belum ada di CRM.</small>
             </span>
             <span className="segment-radio" aria-hidden="true" />
           </button>
@@ -3785,7 +3805,7 @@ function DraftLookupStage({
       </div>
       {lookupState === 'idle' && (
         compactIdleHelp ? (
-          <p className="target-search-empty-hint">Masukkan No. HP Anak, No. HP Orang Tua, atau User Serial untuk melihat akun tujuan.</p>
+          <p className="target-search-empty-hint">Masukkan No. HP Anak, No. HP Orang Tua, atau User Serial.</p>
         ) : (
         <Callout className="lookup-hint">
           <strong>{isExistingFlow ? 'Cari akun tujuan' : 'Cek nomor Orang Tua'}</strong>
@@ -5514,6 +5534,15 @@ function LeadStatusBlock({ status = 'no-lead' }: { status?: LeadAssignmentStatus
     <div className={`lead-status-block ${status}`}>
       <strong><Icon size={14} aria-hidden="true" /> {label}</strong>
       {status === 'no-lead' && <small>Jika pembelian berhasil, lead ini otomatis ditugaskan ke kamu.</small>}
+    </div>
+  )
+}
+
+function NewAccountLeadStatusBlock() {
+  return (
+    <div className="new-account-lead-strip">
+      <Info size={14} aria-hidden="true" />
+      <span>Lead akan ditugaskan ke kamu setelah pembelian berhasil.</span>
     </div>
   )
 }
