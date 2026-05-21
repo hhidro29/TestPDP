@@ -178,6 +178,24 @@ Input untuk field No. HP Orang Tua:
 - Input No. HP baru: 081298765432
 - Expected: harus diblokir karena sudah dipakai akun Orang Tua lain.
 
+04. Nomor Orang Tua sama dengan akun Anak parentless
+- Input awal di Cari Akun: 081234567890
+- Expected di Hasil Pencarian:
+  - Sistem menampilkan 1 Akun Anak dengan No. HP Anak 081234567890.
+  - Pilih Akun Anak Keisha Azzahra sebagai tujuan paket.
+- Input di Step Orang Tua / field No. HP Orang Tua: 081234701234
+- Akun Anak parentless terkait:
+  - Rania Azzahra | Kelas 7 SMP | No. HP 081234701234 | SN AZMIGD1L0YPTRNIA
+- Expected di Step Orang Tua:
+  - Sistem menampilkan warning bahwa No. HP Orang Tua sama dengan akun Anak parentless.
+  - Sistem menampilkan daftar akun Anak parentless yang nomornya sama dengan No. HP Orang Tua.
+  - Agent wajib memilih minimal satu akun Anak yang perlu ikut ditautkan sebelum bisa lanjut.
+  - Input awal pencarian tetap memakai No. HP Anak tujuan paket, sedangkan No. HP Orang Tua dipakai untuk mendeteksi akun parentless terkait.
+- Expected di Draft Invoice:
+  - Muncul section terpisah "Akun Anak Terkait" yang collapsible.
+  - Section tersebut menampilkan jumlah akun, nama Anak, kelas, No. HP, dan Serial Number.
+  - Copy konsekuensi: akun terkait akan berada di Orang Tua terpilih setelah pembelian berhasil.
+
 ============================================================
 D. FORMAT VALIDATION USER SERIAL
 ============================================================
