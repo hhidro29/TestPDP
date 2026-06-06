@@ -5177,6 +5177,7 @@ function DraftInvoiceSelectedAccountDetails({ account, changeTargetAction, layou
   const [childEmail, setChildEmail] = useState(buildPrototypeEmail(profile.name, 'email.anak@gmail.com'))
   const [childName, setChildName] = useState(profile.name)
   const [childGrade, setChildGrade] = useState(profile.grade)
+  const [childSchool, setChildSchool] = useState('')
   const initialChildPhone = profile.contact ?? ''
   const initialChildEmail = buildPrototypeEmail(profile.name, 'email.anak@gmail.com')
   const initialChildName = profile.name
@@ -5205,6 +5206,7 @@ function DraftInvoiceSelectedAccountDetails({ account, changeTargetAction, layou
           <div className="editable-info-list">
             <EditableInfoListRow key="selected-child-name" initialValue={initialChildName} label="Nama Anak" required value={childName} onChange={setChildName} />
             <EditableInfoListRow key="selected-child-grade" initialValue={initialChildGrade} label="Kelas Anak" options={GRADE_OPTIONS} required value={childGrade} onChange={setChildGrade} />
+            <SchoolSelectorRow value={childSchool} onChange={setChildSchool} />
             <EditableInfoListRow key="selected-child-phone" initialValue={initialChildPhone} label="No. HP Anak" required value={childPhone} onChange={setChildPhone} />
             <EditableInfoListRow key="selected-child-email" initialValue={initialChildEmail} label="Email Anak" optional value={childEmail} onChange={setChildEmail} />
             <InfoListStaticRow label="Serial Number Anak">SN {profile.serial}</InfoListStaticRow>
@@ -5354,6 +5356,7 @@ function OptionFiveLegacyChildDetails({ changeTargetAction, childEmail, childNam
   const childGradeValue = grade || initialChildGrade
   const childPhoneValue = childPhone || initialChildPhone
   const childEmailValue = childEmail || initialChildEmail
+  const [childSchool, setChildSchool] = useState('')
   const parentNameValue = parentName || existingAccount.parentName
   const initialParentPhone = existingAccount.parentPhone
   const parentPhoneValue = parentPhone || initialParentPhone
@@ -5377,6 +5380,7 @@ function OptionFiveLegacyChildDetails({ changeTargetAction, childEmail, childNam
           <div className="editable-info-list">
             <EditableInfoListRow key="legacy-child-name" initialValue={initialChildName} label="Nama Anak" required value={childNameValue} onChange={setChildName} />
             <EditableInfoListRow key="legacy-child-grade" initialValue={initialChildGrade} label="Kelas Anak" options={GRADE_OPTIONS} required value={childGradeValue} onChange={setGrade} />
+            <SchoolSelectorRow value={childSchool} onChange={setChildSchool} />
             <EditableInfoListRow key="legacy-child-phone" initialValue={initialChildPhone} label="No. HP Anak" required value={childPhoneValue} onChange={setChildPhone} />
             <EditableInfoListRow key="legacy-child-email" initialValue={initialChildEmail} label="Email Anak" optional value={childEmailValue} onChange={setChildEmail} />
           </div>
@@ -5455,6 +5459,7 @@ function OptionFiveNewChildDetails({ account, changeTargetAction, childEmail, ch
   const parentNameValue = parentUpdateName || account.name
   const parentEmail = buildPrototypeEmail(parentNameValue, 'email.orangtua@gmail.com')
   const parentUpdateState = getParentUpdateState(account, parentUpdateName, parentPhoneValue)
+  const [childSchool, setChildSchool] = useState('')
   const selectExistingProfile = (profile: ChildProfile) => {
     setProfileTarget('existing')
     setSelectedChildProfileId(profile.id)
@@ -5476,6 +5481,7 @@ function OptionFiveNewChildDetails({ account, changeTargetAction, childEmail, ch
           <div className="editable-info-list">
             <EditableInfoListRow key="new-child-name" label="Nama Anak" placeholder="Lengkapi nama" required value={childName} onChange={setChildName} />
             <EditableInfoListRow key="new-child-grade" label="Kelas Anak" options={GRADE_OPTIONS} placeholder="Pilih kelas" required value={grade} onChange={setGrade} />
+            <SchoolSelectorRow value={childSchool} onChange={setChildSchool} />
             <EditableInfoListRow key="new-child-phone" label="No. HP Anak" placeholder="Lengkapi No. HP" required value={childPhone} onChange={setChildPhone} />
             <EditableInfoListRow key="new-child-email" label="Email Anak" optional placeholder="Lengkapi email" value={childEmail} onChange={setChildEmail} />
           </div>
