@@ -12,6 +12,7 @@ import {
   MoreVertical,
   Pencil,
   Phone,
+  Search,
   X,
 } from 'lucide-react'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
@@ -54,6 +55,23 @@ const GRADE_OPTIONS = [
   'Kelas 10 SMA',
   'Kelas 11 SMA',
   'Kelas 12 SMA',
+]
+
+const SCHOOL_LOCATIONS = [
+  {
+    province: 'Jawa Barat',
+    cities: [
+      { city: 'Kota Bandung', schools: ['SMA Negeri 3 Bandung', 'SMA Negeri 5 Bandung', 'SMA Islam Al-Azhar Bandung', 'SMA Kristen Bandung'] },
+      { city: 'Kota Bekasi', schools: ['SMA Negeri 1 Bekasi', 'SMA Negeri 5 Bekasi', 'SMA Islam Al-Azhar 4 Bekasi'] },
+    ],
+  },
+  {
+    province: 'DKI Jakarta',
+    cities: [
+      { city: 'Jakarta Selatan', schools: ['SMA Negeri 8 Jakarta', 'SMA Negeri 28 Jakarta', 'SMA Labschool Kebayoran'] },
+      { city: 'Jakarta Timur', schools: ['SMA Negeri 81 Jakarta', 'SMA Negeri 61 Jakarta', 'SMA Labschool Rawamangun'] },
+    ],
+  },
 ]
 
 type ChildProfile = {
@@ -1390,7 +1408,9 @@ function App() {
             lookupPickerOpen={lookupPickerOpen}
             lookupState={lookupState}
             parentPhone={parentPhone}
+            parentName={parentName}
             parentUpdatePhone={parentUpdatePhone}
+            parentUpdateName={parentUpdateName}
             phone={phone}
             profileTarget={profileTarget}
             grade={grade}
@@ -1410,6 +1430,8 @@ function App() {
             setLookupState={setLookupState}
             setLookupPickerOpen={setLookupPickerOpen}
             setParentPhone={setParentPhone}
+            setParentName={setParentName}
+            setParentUpdateName={setParentUpdateName}
             setParentUpdatePhone={setParentUpdatePhone}
             setSelectedParentlessChildIds={setSelectedParentlessChildIds}
             setPhone={setPhone}
@@ -1458,6 +1480,7 @@ function App() {
               setLookupPickerOpen={setLookupPickerOpen}
               parentName={parentName}
               parentPhone={parentPhone}
+              parentUpdateName={parentUpdateName}
               phone={phone}
               setAccountStatus={handleAccountStatusChange}
               setChildEmail={setChildEmail}
@@ -1468,6 +1491,8 @@ function App() {
               setContactOwner={handleContactOwnerChange}
               setGrade={setGrade}
               setLegacyAccountSelected={handleLegacyAccountSelectedChange}
+              setParentName={setParentName}
+              setParentUpdateName={setParentUpdateName}
               setParentPhone={setParentPhone}
                 setParentUpdatePhone={setParentUpdatePhone}
               setPhone={setPhone}
@@ -1504,6 +1529,7 @@ function App() {
             consent={consent}
             lookupState={lookupState}
             phone={phone}
+            childPhone={childPhone}
             childName={childName}
             grade={grade}
             parentName={effectiveParentName || parentName}
@@ -1717,6 +1743,7 @@ function PurchasePurposeCard({
   setLegacyAccountSelected,
   setLookupState,
   setLookupPickerOpen,
+  setParentName = () => {},
   setParentPhone,
   setParentUpdatePhone,
   setPhone,
@@ -2171,11 +2198,13 @@ function PurchasePurposeCard({
                 childPhone={childPhone}
                 grade={grade}
                 layout={useEditableInfoList ? 'info-list' : 'card'}
+                parentName={parentName}
                 parentPhone={parentPhone}
                 setChildEmail={setChildEmail}
                 setChildName={setChildName}
                 setChildPhone={setChildPhone}
                 setGrade={setGrade}
+                setParentName={setParentName}
                 setParentPhone={setParentPhone}
               />
             ) : (
@@ -2381,6 +2410,10 @@ function SelectedPackageTargetHero({ action, label = 'Profil Anak', title }: { a
   )
 }
 
+function getLearningAccessCopy(parentPhone: string, childPhone?: string) {
+  return `Akses Login Belajar: masuk dengan Username dan PIN. Otomatis dikirim ke WA Orang Tua ${parentPhone || '-'} dan WA Anak ${childPhone || '-'}.`
+}
+
 function PurchaseConfirmationBlock({ canConfirm = true, childPhone, consent, errorMessage = 'Centang konfirmasi agent sebelum memilih metode pembayaran.', parentEmail, parentPhone, setConsent, showChecklist = true, showError = false }: {
   canConfirm?: boolean
   childPhone?: string
@@ -2394,7 +2427,7 @@ function PurchaseConfirmationBlock({ canConfirm = true, childPhone, consent, err
 }) {
   const parentPhoneText = parentPhone || '-'
   const parentEmailText = parentEmail.trim()
-  const childPhoneText = childPhone || ''
+  const childPhoneText = childPhone || '-'
   const detailRef = useRef<HTMLDivElement>(null)
   const previousConsentRef = useRef(consent)
 
@@ -2433,16 +2466,8 @@ function PurchaseConfirmationBlock({ canConfirm = true, childPhone, consent, err
               <div className="confirmation-message-row">
                 <Lock size={15} />
                 <div>
-                  <strong>Akses Login Anak</strong>
-                  <p>Anak belajar dengan <HighlightedReviewValue>Username dan PIN</HighlightedReviewValue>. <HighlightedReviewValue>Otomatis dikirim</HighlightedReviewValue> ke WA Orang Tua <HighlightedReviewValue>{parentPhoneText}</HighlightedReviewValue>{childPhoneText ? <> dan WA Anak <HighlightedReviewValue>{childPhoneText}</HighlightedReviewValue></> : ''}.</p>
-                </div>
-              </div>
-
-              <div className="confirmation-message-row">
-                <Lock size={15} />
-                <div>
-                  <strong>Akses Login Orang Tua</strong>
-                  <p>Login dengan No. HP <HighlightedReviewValue>{parentPhoneText}</HighlightedReviewValue>{parentEmailText ? <> atau Email <HighlightedReviewValue>{parentEmailText}</HighlightedReviewValue></> : ''}.</p>
+                  <strong>Akses Login Belajar</strong>
+                  <p>Masuk dengan <HighlightedReviewValue>Username dan PIN</HighlightedReviewValue>. <HighlightedReviewValue>Otomatis dikirim</HighlightedReviewValue> ke WA Orang Tua <HighlightedReviewValue>{parentPhoneText}</HighlightedReviewValue> dan WA Anak <HighlightedReviewValue>{childPhoneText}</HighlightedReviewValue>.</p>
                 </div>
               </div>
 
@@ -2640,6 +2665,7 @@ function OptionThreeWizard({
           <WizardReviewStep
             accountStatus={accountStatus}
             childName={childName}
+            childPhone={childPhone}
             consent={consent}
             grade={grade}
             parentAccount={parentLookupAccount}
@@ -2925,7 +2951,9 @@ function AccountTargetSelectionPage({
   consent = false,
   legacyAccountSelected,
   lookupState,
+  parentName = '',
   parentPhone = '',
+  parentUpdateName = '',
   parentUpdatePhone = '',
   phone,
   profileTarget,
@@ -2944,7 +2972,9 @@ function AccountTargetSelectionPage({
   setLegacyAccountSelected,
   setLookupState,
   setLookupPickerOpen,
+  setParentName = () => {},
   setParentPhone = () => {},
+  setParentUpdateName = () => {},
   setParentUpdatePhone = () => {},
   setSelectedParentlessChildIds = () => {},
   setPhone,
@@ -2960,6 +2990,8 @@ function AccountTargetSelectionPage({
   const [targetWizardStep, setTargetWizardStep] = useState<TargetWizardStep>('search')
   const [parentDataConfirmed, setParentDataConfirmed] = useState(false)
   const [childDataConfirmed, setChildDataConfirmed] = useState(false)
+  const [childPhoneMatchesParent, setChildPhoneMatchesParent] = useState(false)
+  const [childSchool, setChildSchool] = useState('')
   const [parentlessRelationConfirmed, setParentlessRelationConfirmed] = useState(false)
   const [targetStepErrorVisible, setTargetStepErrorVisible] = useState(false)
 
@@ -2973,11 +3005,12 @@ function AccountTargetSelectionPage({
   const showLegacyDetails = Boolean(isOldAccountLookup(lookupState) && legacyAccountSelected)
   const showSelectedExistingDetails = Boolean((selectedSearchParentAccount && selectedChildSearchProfile) || parentLookupSelectionReady || showLegacyDetails)
   const confirmationParentAccount = selectedSearchParentAccount ?? parentLookupAccount
+  const confirmationParentName = confirmationParentAccount ? parentUpdateName || confirmationParentAccount.name : parentName || existingAccount.parentName || ''
   const confirmationParentPhone = confirmationParentAccount ? parentUpdatePhone || confirmationParentAccount.phone : parentPhone || existingAccount.parentPhone || phone
-  const confirmationParentEmail = confirmationParentAccount ? buildPrototypeEmail(confirmationParentAccount.name, 'emailorangtua@gm.com') : ''
+  const confirmationParentEmail = confirmationParentAccount ? buildPrototypeEmail(confirmationParentName, 'emailorangtua@gm.com') : ''
   const confirmationChildPhone = selectedChildSearchProfile?.contact ?? selectedParentLookupProfile?.contact ?? childPhone ?? (showLegacyDetails ? existingAccount.phone : '')
   const confirmationChildSerial = selectedChildSearchProfile?.serial ?? selectedParentLookupProfile?.serial ?? (showLegacyDetails ? existingAccount.serial : '')
-  const parentUpdateState = confirmationParentAccount ? getParentUpdateState(confirmationParentAccount, confirmationParentAccount.name, confirmationParentPhone) : null
+  const parentUpdateState = confirmationParentAccount ? getParentUpdateState(confirmationParentAccount, confirmationParentName, confirmationParentPhone) : null
   const newParentlessChildMatches = accountStatus === 'new' && canCheckParentPhone(parentPhone) && !newParentAccount ? getParentlessChildProfilesByPhone(parentPhone) : []
   const existingParentlessMatchPhone = confirmationParentAccount ? confirmationParentPhone : parentPhone || existingAccount.parentPhone
   const existingParentlessChildMatches = accountStatus === 'existing' && showSelectedExistingDetails && canCheckParentPhone(existingParentlessMatchPhone) && !parentUpdateState?.registeredToOtherParent
@@ -2988,6 +3021,7 @@ function AccountTargetSelectionPage({
   const parentlessRelationRequired = parentlessChildMatches.length > 0
   const parentStepValidationErrors = (() => {
     if (accountStatus === 'new') {
+      if (!parentName.trim()) return ['Nama Orang Tua wajib diisi.']
       if (!parentPhone.trim()) return ['No. HP Orang Tua wajib diisi.']
       if (!canCheckParentPhone(parentPhone)) return ['No. HP Orang Tua belum valid. Isi minimal 8 digit angka.']
       if (newParentAccount) return [`No. HP Orang Tua sudah terdaftar di akun Orang Tua ${newParentAccount.name}. Gunakan nomor lain atau pilih flow Sudah punya akun.`]
@@ -2996,6 +3030,7 @@ function AccountTargetSelectionPage({
     }
 
     if (!showSelectedExistingDetails) return ['Pilih akun anak tujuan paket terlebih dahulu.']
+    if (!confirmationParentName.trim()) return ['Nama Orang Tua wajib diisi.']
     if (!confirmationParentPhone.trim()) return ['No. HP Orang Tua wajib diisi.']
     if (!canCheckParentPhone(confirmationParentPhone)) return ['No. HP Orang Tua belum valid. Isi minimal 8 digit angka.']
     if (parentUpdateState?.registeredToOtherParent && parentUpdateState.registeredAccount) {
@@ -3013,6 +3048,7 @@ function AccountTargetSelectionPage({
     const errors: string[] = []
     if (!childName.trim()) errors.push('Nama Anak wajib diisi.')
     if (!grade.trim()) errors.push('Kelas Anak wajib dipilih.')
+    if (!childSchool.trim()) errors.push('Nama Sekolah wajib diisi.')
     if (!childPhone.trim()) errors.push('No. HP Anak wajib diisi.')
     else if (!canCheckParentPhone(childPhone)) errors.push('No. HP Anak belum valid. Isi minimal 8 digit angka.')
     return errors
@@ -3054,12 +3090,16 @@ function AccountTargetSelectionPage({
     setSelectedChildSearchProfileId('')
     setLegacyAccountSelected(false)
     setPhone('')
+    setParentName('')
     setParentPhone('')
+    setParentUpdateName('')
     setParentUpdatePhone('')
     setChildName('')
     setChildPhone('')
     setChildEmail('')
+    setChildSchool('')
     setGrade('')
+    setChildPhoneMatchesParent(false)
     setPackageIntent(null)
     setDuplicateProfileAcknowledged(false)
     setConsent(false)
@@ -3151,8 +3191,20 @@ function AccountTargetSelectionPage({
 
   const handleParentPhoneChange = (value: string) => {
     setParentPhone(value)
+    if (childPhoneMatchesParent) setChildPhone(value)
     setParentlessRelationConfirmed(false)
     setSelectedParentlessChildIds([])
+    clearParentConfirmation()
+    if (childPhoneMatchesParent) clearChildConfirmation()
+  }
+
+  const handleParentNameChange = (value: string) => {
+    setParentName(value)
+    clearParentConfirmation()
+  }
+
+  const handleParentUpdateNameChange = (value: string) => {
+    setParentUpdateName(value)
     clearParentConfirmation()
   }
 
@@ -3170,6 +3222,18 @@ function AccountTargetSelectionPage({
 
   const handleChildPhoneChange = (value: string) => {
     setChildPhone(value)
+    if (normalizePhoneDigits(value) !== normalizePhoneDigits(newParentPhone)) setChildPhoneMatchesParent(false)
+    clearChildConfirmation()
+  }
+
+  const handleChildPhoneMatchesParentChange = (value: boolean) => {
+    setChildPhoneMatchesParent(value)
+    setChildPhone(value ? newParentPhone : '')
+    clearChildConfirmation()
+  }
+
+  const handleChildSchoolChange = (value: string) => {
+    setChildSchool(value)
     clearChildConfirmation()
   }
 
@@ -3203,9 +3267,11 @@ function AccountTargetSelectionPage({
       changeTargetAction={existingChangeTargetAction}
       layout="info-list"
       parentUpdatePhone={parentUpdatePhone}
+      parentUpdateName={parentUpdateName}
       parentlessMatches={parentlessChildMatches}
       profile={selectedChildSearchProfile}
       selectedParentlessChildIds={selectedParentlessChildIds}
+      setParentUpdateName={handleParentUpdateNameChange}
       setParentUpdatePhone={handleParentUpdatePhoneChange}
       onToggleParentlessChild={toggleParentlessChildSelection}
     />
@@ -3216,9 +3282,11 @@ function AccountTargetSelectionPage({
       changeTargetAction={existingChangeTargetAction}
       layout="info-list"
       parentUpdatePhone={parentUpdatePhone}
+      parentUpdateName={parentUpdateName}
       parentlessMatches={parentlessChildMatches}
       profile={selectedParentLookupProfile}
       selectedParentlessChildIds={selectedParentlessChildIds}
+      setParentUpdateName={handleParentUpdateNameChange}
       setParentUpdatePhone={handleParentUpdatePhoneChange}
       onToggleParentlessChild={toggleParentlessChildSelection}
     />
@@ -3234,12 +3302,14 @@ function AccountTargetSelectionPage({
       grade={grade}
       layout="info-list"
       parentUpdatePhone={parentUpdatePhone}
+      parentUpdateName={parentUpdateName}
       setChildEmail={handleChildEmailChange}
       setChildName={handleChildNameChange}
       setChildPhone={handleChildPhoneChange}
       setDuplicateProfileAcknowledged={setDuplicateProfileAcknowledged}
       setGrade={handleGradeChange}
       setParentUpdatePhone={handleParentUpdatePhoneChange}
+      setParentUpdateName={handleParentUpdateNameChange}
       setProfileTarget={setProfileTarget}
       setSelectedChildProfileId={setSelectedChildProfileId}
     />
@@ -3251,6 +3321,7 @@ function AccountTargetSelectionPage({
       childPhone={childPhone}
       grade={grade}
       layout="info-list"
+      parentName={parentName}
       parentPhone={parentPhone}
       parentlessMatches={parentlessChildMatches}
       selectedParentlessChildIds={selectedParentlessChildIds}
@@ -3258,6 +3329,7 @@ function AccountTargetSelectionPage({
       setChildName={handleChildNameChange}
       setChildPhone={handleChildPhoneChange}
       setGrade={handleGradeChange}
+      setParentName={handleParentNameChange}
       setParentPhone={handleParentPhoneChange}
       onToggleParentlessChild={toggleParentlessChildSelection}
     />
@@ -3268,16 +3340,22 @@ function AccountTargetSelectionPage({
       childEmail={childEmail}
       childName={childName}
       childPhone={childPhone}
+      childPhoneMatchesParent={childPhoneMatchesParent}
+      childSchool={childSchool}
       errorFields={activeTargetStep === 'parent' ? parentFieldsWithError : childFieldsWithError}
       grade={grade}
       parentlessMatches={parentlessChildMatches}
+      parentName={parentName}
       parentlessRelationConfirmed={parentlessRelationConfirmed}
       parentPhone={newParentPhone}
       selectedParentlessChildIds={selectedParentlessChildIds}
       setChildEmail={handleChildEmailChange}
       setChildName={handleChildNameChange}
       setChildPhone={handleChildPhoneChange}
+      setChildPhoneMatchesParent={handleChildPhoneMatchesParentChange}
+      setChildSchool={handleChildSchoolChange}
       setGrade={handleGradeChange}
+      setParentName={handleParentNameChange}
       setParentPhone={handleParentPhoneChange}
       onToggleParentlessChild={toggleParentlessChildSelection}
     />
@@ -3640,6 +3718,8 @@ type AccountTargetSearchSheetProps = {
   lookupState: LookupState
   lookupPickerOpen: boolean
   parentPhone?: string
+  parentName?: string
+  parentUpdateName?: string
   parentUpdatePhone?: string
   phone: string
   profileTarget: ProfileTarget
@@ -3657,6 +3737,8 @@ type AccountTargetSearchSheetProps = {
   setDuplicateProfileAcknowledged?: (value: boolean) => void
   setGrade?: (value: string) => void
   setLegacyAccountSelected: (value: boolean) => void
+  setParentName?: (value: string) => void
+  setParentUpdateName?: (value: string) => void
   setLookupState: (value: LookupState) => void
   setLookupPickerOpen: (value: boolean) => void
   setParentPhone?: (value: string) => void
@@ -3948,6 +4030,8 @@ type PurchasePurposeCardProps = {
   setDuplicateProfileAcknowledged: (value: boolean) => void
   setGrade: (value: string) => void
   setLegacyAccountSelected: (value: boolean) => void
+  setParentName?: (value: string) => void
+  setParentUpdateName?: (value: string) => void
   setParentPhone: (value: string) => void
   setParentUpdatePhone: (value: string) => void
   setPhone: (value: string) => void
@@ -4283,9 +4367,10 @@ function NewChildProfileForm({ childEmail, childName, childPhone, grade, setChil
   )
 }
 
-function WizardReviewStep({ accountStatus, childName, consent, grade, parentAccount, parentName, parentPhone, phone, profileTarget, selectedParentLookupProfileId, selectedChildSearchProfileId, setConsent, usesParentIdentity }: {
+function WizardReviewStep({ accountStatus, childName, childPhone, consent, grade, parentAccount, parentName, parentPhone, phone, profileTarget, selectedParentLookupProfileId, selectedChildSearchProfileId, setConsent, usesParentIdentity }: {
   accountStatus: AccountStatus | null
   childName: string
+  childPhone: string
   consent: boolean
   grade: string
   parentAccount: ParentProfileAccount | null
@@ -4317,7 +4402,8 @@ function WizardReviewStep({ accountStatus, childName, consent, grade, parentAcco
   const targetGrade = selectedSearchProfile?.grade ?? (parentAccount && profileTarget === 'existing' && selectedProfile ? selectedProfile.grade : grade || '-')
   const usesExistingProfile = Boolean(selectedSearchProfile || (parentAccount && profileTarget === 'existing' && selectedProfile))
   const reviewType = selectedSearchProfile || parentAccount ? 'Aktivasi paket' : isNewAccount ? 'Pembuatan akun' : 'Konversi akun'
-  const accessCopy = parentAccount || isNewAccount ? 'Username dan PIN dikirim ke WhatsApp Orang Tua.' : 'Login anak berubah ke Username dan PIN.'
+  const targetChildPhone = selectedSearchProfile?.contact ?? selectedProfile?.contact ?? childPhone
+  const accessCopy = getLearningAccessCopy(parentDisplayPhone, targetChildPhone)
   const parentPhoneWillChange = Boolean(selectedSearchProfile && parentPhone && normalizePhoneDigits(parentPhone) !== normalizePhoneDigits(selectedSearchProfile.parentPhone ?? ''))
   const changeOverviewItems = [
     parentPhoneWillChange ? `No. HP Orang Tua diubah dari ${selectedSearchProfile?.parentPhone} ke ${parentPhone}.` : null,
@@ -4714,16 +4800,6 @@ function buildPrototypeEmail(name: string, fallback: string) {
   return slug ? slug + '@gmail.com' : fallback
 }
 
-function buildPrototypeUsername(name: string) {
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9\s.]/g, '')
-    .trim()
-    .replace(/\s+/g, '.')
-
-  return slug || 'username.anak'
-}
-
 function DraftDataRow({ initialValue, label, onChange, optional = false, options, required = false, value }: {
   icon?: ReactNode
   initialValue?: string
@@ -4755,6 +4831,11 @@ function DraftDataRow({ initialValue, label, onChange, optional = false, options
     const cursorPosition = inputRef.current?.value.length ?? 0
     inputRef.current?.setSelectionRange(cursorPosition, cursorPosition)
   }, [editing, options])
+
+  useEffect(() => {
+    if (!editing) return
+    setDraftValue(value)
+  }, [editing, value])
 
   const startEditing = () => {
     setDraftValue(displayValue)
@@ -4839,15 +4920,17 @@ function DraftDataRow({ initialValue, label, onChange, optional = false, options
   )
 }
 
-function EditableInfoListRow({ editingHelper, error = false, helper, initialValue, label, optional = false, onChange, onCommit, options, placeholder = '-', required = false, value }: {
+function EditableInfoListRow({ editingHelper, error = false, helper, initialValue, inputDisabled = false, label, optional = false, onChange, onCommit, onStartEdit, options, placeholder = '-', required = false, value }: {
   editingHelper?: ReactNode | ((draftValue: string) => ReactNode)
   error?: boolean
   helper?: ReactNode
   initialValue?: string
+  inputDisabled?: boolean
   label: string
   optional?: boolean
   onChange?: (value: string) => void
   onCommit?: (value: string) => void
+  onStartEdit?: () => void
   options?: string[]
   placeholder?: string
   required?: boolean
@@ -4877,6 +4960,11 @@ function EditableInfoListRow({ editingHelper, error = false, helper, initialValu
     inputRef.current?.setSelectionRange(cursorPosition, cursorPosition)
   }, [editing, options])
 
+  useEffect(() => {
+    if (!editing) return
+    setDraftValue(value)
+  }, [editing, value])
+
   const finishEditing = () => {
     const nextValue = options ? selectRef.current?.value ?? draftValue : inputRef.current?.value ?? draftValue
     setDraftValue(nextValue)
@@ -4890,13 +4978,14 @@ function EditableInfoListRow({ editingHelper, error = false, helper, initialValu
     onChange?.(nextValue)
   }
 
-  const editor = editing && onChange ? (
+  const editor = editing && onChange && !inputDisabled ? (
     <div className="editable-info-editor">
       {selectOptions ? (
         <div className="editable-info-select-wrap">
           <select
             ref={selectRef}
             aria-label={label}
+            disabled={inputDisabled}
             value={draftValue}
             onChange={(event) => {
               onChange(event.target.value)
@@ -4920,6 +5009,7 @@ function EditableInfoListRow({ editingHelper, error = false, helper, initialValu
         <input
           ref={inputRef}
           aria-label={label}
+          disabled={inputDisabled}
           value={draftValue}
           onChange={(event) => handleTextChange(event.target.value)}
           onBlur={finishEditing}
@@ -4937,7 +5027,7 @@ function EditableInfoListRow({ editingHelper, error = false, helper, initialValu
   ) : null
 
   return (
-    <div className={[hasChanged ? 'editable-info-row changed' : 'editable-info-row', !displayValue ? 'empty' : '', editing ? 'editing' : '', error ? 'error' : ''].filter(Boolean).join(' ')}>
+    <div className={[hasChanged ? 'editable-info-row changed' : 'editable-info-row', !displayValue ? 'empty' : '', editing ? 'editing' : '', inputDisabled ? 'input-disabled' : '', error ? 'error' : ''].filter(Boolean).join(' ')}>
       <div className="editable-info-line">
         <span className="editable-info-label">
           {label}
@@ -4945,11 +5035,12 @@ function EditableInfoListRow({ editingHelper, error = false, helper, initialValu
           {optional && <small>(opsional)</small>}
         </span>
         <strong className={!displayValue ? 'editable-info-placeholder' : undefined}>{displayText}</strong>
-        {canEdit && !editing && (
+        {canEdit && !editing && !inputDisabled && (
           <button
             type="button"
             aria-label={'Edit ' + label}
             onClick={() => {
+              onStartEdit?.()
               setDraftValue(value)
               setEditing(true)
             }}
@@ -4999,10 +5090,10 @@ function ChildLoginAccessNotice() {
     <div className="child-login-access-note">
       <KeyRound size={14} />
       <div>
-        <strong className="child-login-access-title">Akses Login Anak Akan Berubah</strong>
+        <strong className="child-login-access-title">Akses Login Belajar</strong>
         <ul>
-          <li><strong>No. HP dan email Anak sudah tidak bisa lagi digunakan untuk login.</strong></li>
-          <li>Username dan PIN akan dikirim <strong>otomatis</strong> ke WhatsApp Anak dan Orang Tua.</li>
+          <li>Masuk dengan <strong>Username dan PIN</strong>.</li>
+          <li><strong>Otomatis dikirim</strong> ke WA Orang Tua dan WA Anak.</li>
         </ul>
       </div>
     </div>
@@ -5068,16 +5159,18 @@ function ParentPhoneInfoListRow({ initialValue, onChange, placeholder, value }: 
   )
 }
 
-function DraftInvoiceSelectedAccountDetails({ account, changeTargetAction, layout = 'card', matchedValue, onToggleParentlessChild, parentUpdatePhone, parentlessMatches = [], profile, selectedParentlessChildIds = [], setParentUpdatePhone }: {
+function DraftInvoiceSelectedAccountDetails({ account, changeTargetAction, layout = 'card', matchedValue, onToggleParentlessChild, parentUpdateName = '', parentUpdatePhone, parentlessMatches = [], profile, selectedParentlessChildIds = [], setParentUpdateName = () => {}, setParentUpdatePhone }: {
   account: ParentProfileAccount
   changeTargetAction?: ReactNode
   layout?: 'card' | 'info-list'
   matchedValue?: string
   onToggleParentlessChild?: (profile: ChildProfile) => void
+  parentUpdateName?: string
   parentUpdatePhone: string
   parentlessMatches?: ChildProfile[]
   profile: ChildProfile
   selectedParentlessChildIds?: string[]
+  setParentUpdateName?: (value: string) => void
   setParentUpdatePhone: (value: string) => void
 }) {
   const [childPhone, setChildPhone] = useState(profile.contact ?? '')
@@ -5089,8 +5182,9 @@ function DraftInvoiceSelectedAccountDetails({ account, changeTargetAction, layou
   const initialChildName = profile.name
   const initialChildGrade = profile.grade
   const parentPhoneValue = parentUpdatePhone || account.phone
-  const parentEmail = buildPrototypeEmail(account.name, 'email.orangtua@gmail.com')
-  const parentUpdateState = getParentUpdateState(account, account.name, parentPhoneValue)
+  const parentNameValue = parentUpdateName || account.name
+  const parentEmail = buildPrototypeEmail(parentNameValue, 'email.orangtua@gmail.com')
+  const parentUpdateState = getParentUpdateState(account, parentNameValue, parentPhoneValue)
   const latestPackage = getLatestPackageName(profile)
   const selectedProfileParentlessPhoneMatches = Boolean(canCheckParentPhone(parentPhoneValue)
     && parentlessChildProfiles.some((parentlessProfile) => parentlessProfile.serial === profile.serial && normalizePhoneDigits(parentlessProfile.contact ?? '') === normalizePhoneDigits(parentPhoneValue)))
@@ -5114,7 +5208,6 @@ function DraftInvoiceSelectedAccountDetails({ account, changeTargetAction, layou
             <EditableInfoListRow key="selected-child-phone" initialValue={initialChildPhone} label="No. HP Anak" required value={childPhone} onChange={setChildPhone} />
             <EditableInfoListRow key="selected-child-email" initialValue={initialChildEmail} label="Email Anak" optional value={childEmail} onChange={setChildEmail} />
             <InfoListStaticRow label="Serial Number Anak">SN {profile.serial}</InfoListStaticRow>
-            <InfoListStaticRow label="Username Anak">{buildPrototypeUsername(childName)}</InfoListStaticRow>
           </div>
         </section>
 
@@ -5122,12 +5215,13 @@ function DraftInvoiceSelectedAccountDetails({ account, changeTargetAction, layou
           <div className="option-six-person-heading">
             <div>
               <h4>Data Orang Tua</h4>
-              <strong>{account.name}</strong>
+              <strong>{parentNameValue}</strong>
             </div>
           </div>
           <LeadStatusBlock status={account.leadStatus} />
           <ActiveDataReminder type="orang-tua" />
           <div className="editable-info-list">
+            <EditableInfoListRow key="selected-parent-name" initialValue={account.name} label="Nama Orang Tua" required value={parentNameValue} onChange={setParentUpdateName} />
             <ParentPhoneInfoListRow initialValue={account.phone} value={parentPhoneValue} onChange={setParentUpdatePhone} />
             <InfoListStaticRow label="Email Orang Tua">{parentEmail}</InfoListStaticRow>
             <InfoListStaticRow label="Serial Number Orang Tua">SN {account.serial}</InfoListStaticRow>
@@ -5166,10 +5260,6 @@ function DraftInvoiceSelectedAccountDetails({ account, changeTargetAction, layou
           <div className="draft-access-note">
             <span>Serial Number</span>
             <strong><UserSerial match={matchedValue} value={profile.serial} /></strong>
-          </div>
-          <div className="draft-access-note">
-            <span>Username</span>
-            <strong>{buildPrototypeUsername(childName)}</strong>
           </div>
         </div>
         <div className="draft-status-line">
@@ -5237,7 +5327,7 @@ function ParentPhoneChangeWarning({ compact = false, phone }: { compact?: boolea
 }
 
 
-function OptionFiveLegacyChildDetails({ changeTargetAction, childEmail, childName, childPhone, grade, layout = 'card', onToggleParentlessChild, parentPhone, parentlessMatches = [], selectedParentlessChildIds = [], setChildEmail, setChildName, setChildPhone, setGrade, setParentPhone }: {
+function OptionFiveLegacyChildDetails({ changeTargetAction, childEmail, childName, childPhone, grade, layout = 'card', onToggleParentlessChild, parentName = '', parentPhone, parentlessMatches = [], selectedParentlessChildIds = [], setChildEmail, setChildName, setChildPhone, setGrade, setParentName = () => {}, setParentPhone }: {
   changeTargetAction: ReactNode
   childEmail: string
   childName: string
@@ -5245,6 +5335,7 @@ function OptionFiveLegacyChildDetails({ changeTargetAction, childEmail, childNam
   grade: string
   layout?: 'card' | 'info-list'
   onToggleParentlessChild?: (profile: ChildProfile) => void
+  parentName?: string
   parentPhone: string
   parentlessMatches?: ChildProfile[]
   selectedParentlessChildIds?: string[]
@@ -5252,6 +5343,7 @@ function OptionFiveLegacyChildDetails({ changeTargetAction, childEmail, childNam
   setChildName: (value: string) => void
   setChildPhone: (value: string) => void
   setGrade: (value: string) => void
+  setParentName?: (value: string) => void
   setParentPhone: (value: string) => void
 }) {
   const initialChildName = existingAccount.name
@@ -5262,7 +5354,7 @@ function OptionFiveLegacyChildDetails({ changeTargetAction, childEmail, childNam
   const childGradeValue = grade || initialChildGrade
   const childPhoneValue = childPhone || initialChildPhone
   const childEmailValue = childEmail || initialChildEmail
-  const parentNameValue = existingAccount.parentName
+  const parentNameValue = parentName || existingAccount.parentName
   const initialParentPhone = existingAccount.parentPhone
   const parentPhoneValue = parentPhone || initialParentPhone
   const shouldShowParentCompletion = Boolean(setParentPhone)
@@ -5301,6 +5393,7 @@ function OptionFiveLegacyChildDetails({ changeTargetAction, childEmail, childNam
             </div>
             <ActiveDataReminder type="orang-tua" />
             <div className="editable-info-list">
+              <EditableInfoListRow key="legacy-parent-name" initialValue={existingAccount.parentName} label="Nama Orang Tua" placeholder="Lengkapi nama" required value={parentNameValue} onChange={setParentName} />
               <ParentPhoneInfoListRow initialValue={initialParentPhone} placeholder="Lengkapi No. HP" value={parentPhoneValue} onChange={setParentPhone} />
             </div>
             {selectedLegacyParentlessPhoneMatches && <ParentlessSelectedTargetNotice parentPhone={parentPhoneValue} />}
@@ -5336,7 +5429,7 @@ function OptionFiveLegacyChildDetails({ changeTargetAction, childEmail, childNam
   )
 }
 
-function OptionFiveNewChildDetails({ account, changeTargetAction, childEmail, childName, childPhone, duplicateProfileAcknowledged, duplicateProfileMatches, grade, layout = 'card', parentUpdateName = '', parentUpdatePhone = '', setChildEmail, setChildName, setChildPhone, setDuplicateProfileAcknowledged, setGrade, setParentUpdatePhone, setProfileTarget, setSelectedChildProfileId }: {
+function OptionFiveNewChildDetails({ account, changeTargetAction, childEmail, childName, childPhone, duplicateProfileAcknowledged, duplicateProfileMatches, grade, layout = 'card', parentUpdateName = '', parentUpdatePhone = '', setChildEmail, setChildName, setChildPhone, setDuplicateProfileAcknowledged, setGrade, setParentUpdateName = () => {}, setParentUpdatePhone, setProfileTarget, setSelectedChildProfileId }: {
   account: ParentProfileAccount
   changeTargetAction: ReactNode
   childEmail: string
@@ -5353,12 +5446,14 @@ function OptionFiveNewChildDetails({ account, changeTargetAction, childEmail, ch
   setChildPhone: (value: string) => void
   setDuplicateProfileAcknowledged: (value: boolean) => void
   setGrade: (value: string) => void
+  setParentUpdateName?: (value: string) => void
   setParentUpdatePhone: (value: string) => void
   setProfileTarget: (value: ProfileTarget) => void
   setSelectedChildProfileId: (value: string) => void
 }) {
   const parentPhoneValue = parentUpdatePhone || account.phone
-  const parentEmail = buildPrototypeEmail(account.name, 'email.orangtua@gmail.com')
+  const parentNameValue = parentUpdateName || account.name
+  const parentEmail = buildPrototypeEmail(parentNameValue, 'email.orangtua@gmail.com')
   const parentUpdateState = getParentUpdateState(account, parentUpdateName, parentPhoneValue)
   const selectExistingProfile = (profile: ChildProfile) => {
     setProfileTarget('existing')
@@ -5396,11 +5491,12 @@ function OptionFiveNewChildDetails({ account, changeTargetAction, childEmail, ch
           <div className="option-six-person-heading">
             <div>
               <h4>Data Orang Tua</h4>
-              <strong>{account.name}</strong>
+              <strong>{parentNameValue}</strong>
               <LeadStatusBadge status={account.leadStatus} />
             </div>
           </div>
           <div className="editable-info-list">
+            <EditableInfoListRow key="new-child-parent-name" initialValue={account.name} label="Nama Orang Tua" required value={parentNameValue} onChange={setParentUpdateName} />
             <ParentPhoneInfoListRow initialValue={account.phone} value={parentPhoneValue} onChange={setParentUpdatePhone} />
             <InfoListStaticRow label="Email Orang Tua">{parentEmail}</InfoListStaticRow>
             <InfoListStaticRow label="Serial Number Orang Tua">SN {account.serial}</InfoListStaticRow>
@@ -6097,7 +6193,7 @@ function BeforeAfterMappingPanel({ contactOwner, phone, setContactOwner }: {
         <PointList items={contactOwner === 'parent' ? [
           'No. HP akun lama menjadi prefill No. HP Orang Tua dan tetap bisa diedit.',
           'Data Anak harus diisi dari informasi pembeli.',
-          'Username dan PIN anak dikirim ke WhatsApp Orang Tua setelah transaksi berhasil.',
+          'Akses Login Belajar masuk dengan Username dan PIN, otomatis dikirim ke WA Orang Tua dan WA Anak setelah transaksi berhasil.',
         ] : contactOwner === 'child' ? [
           'Data akun lama otomatis menjadi prefill Data Anak.',
           'Isi atau koreksi Data Orang Tua sesuai informasi pembeli.',
@@ -6278,13 +6374,113 @@ function ToggleRow({ checked, label, onClick }: { checked: boolean; label: strin
   )
 }
 
-function OptionSixNewAccountDetails({ childEmail, childName, childPhone, errorFields, grade, onToggleParentlessChild, parentlessMatches = [], parentlessRelationConfirmed = false, parentPhone, selectedParentlessChildIds = [], setChildEmail, setChildName, setChildPhone, setGrade, setParentPhone }: {
+function ChildPhoneSameParentToggle({ checked, disabled, onChange }: { checked: boolean; disabled: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <button
+      aria-checked={checked}
+      className={disabled ? 'child-phone-same-toggle disabled' : 'child-phone-same-toggle'}
+      disabled={disabled}
+      role="switch"
+      type="button"
+      onClick={() => onChange(!checked)}
+      onMouseDown={(event) => event.preventDefault()}
+    >
+      <span className="child-phone-toggle-copy">
+        <strong>Sama dengan No. HP Orang Tua</strong>
+      </span>
+      <span className="child-phone-toggle-control" aria-hidden="true" />
+    </button>
+  )
+}
+
+function SchoolSelectorRow({ error = false, value, onChange }: { error?: boolean; value: string; onChange: (value: string) => void }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className={[value ? 'editable-info-row' : 'editable-info-row empty', error ? 'error' : ''].filter(Boolean).join(' ')}>
+      <div className="editable-info-line">
+        <span className="editable-info-label">Nama Sekolah<sup aria-label="wajib">*</sup></span>
+        <strong className={!value ? 'editable-info-placeholder' : undefined}>{value || 'Pilih sekolah'}</strong>
+        <button type="button" aria-label="Pilih Nama Sekolah" onClick={() => setOpen(true)}>
+          <Pencil size={18} />
+        </button>
+      </div>
+      {open && <SchoolPickerSheet selectedSchool={value} onClose={() => setOpen(false)} onSelect={onChange} />}
+    </div>
+  )
+}
+
+function SchoolPickerSheet({ selectedSchool, onClose, onSelect }: { selectedSchool: string; onClose: () => void; onSelect: (value: string) => void }) {
+  const [province, setProvince] = useState(SCHOOL_LOCATIONS[0].province)
+  const activeProvince = SCHOOL_LOCATIONS.find((item) => item.province === province) ?? SCHOOL_LOCATIONS[0]
+  const [city, setCity] = useState(activeProvince.cities[0].city)
+  const activeCity = activeProvince.cities.find((item) => item.city === city) ?? activeProvince.cities[0]
+  const [query, setQuery] = useState('')
+  const [draftSchool, setDraftSchool] = useState(selectedSchool)
+
+  useEffect(() => {
+    if (!activeProvince.cities.some((item) => item.city === city)) setCity(activeProvince.cities[0].city)
+  }, [activeProvince, city])
+
+  const schoolOptions = activeCity.schools.filter((school) => school.toLowerCase().includes(query.trim().toLowerCase()))
+  const confirmSelection = () => {
+    if (!draftSchool) return
+    onSelect(draftSchool)
+    onClose()
+  }
+
+  return (
+    <BottomSheet className="school-picker-sheet" title="Pilih Sekolah" onClose={onClose}>
+      <div className="school-picker-content">
+        <div className="school-picker-step">
+          <strong><span>Step 1</span> Tentukan Domisili Sekolah</strong>
+          <div className="school-location-grid">
+            <label>
+              <select value={province} onChange={(event) => setProvince(event.target.value)}>
+                {SCHOOL_LOCATIONS.map((item) => <option key={item.province} value={item.province}>{item.province}</option>)}
+              </select>
+              <ChevronDown size={16} aria-hidden="true" />
+            </label>
+            <label>
+              <select value={city} onChange={(event) => setCity(event.target.value)}>
+                {activeProvince.cities.map((item) => <option key={item.city} value={item.city}>{item.city}</option>)}
+              </select>
+              <ChevronDown size={16} aria-hidden="true" />
+            </label>
+          </div>
+        </div>
+        <div className="school-picker-step">
+          <strong><span>Step 2</span> Pilih dan Cari Sekolah</strong>
+          <label className="school-search-field">
+            <Search size={19} aria-hidden="true" />
+            <input aria-label="Cari Sekolah" placeholder="Cari Sekolah" value={query} onChange={(event) => setQuery(event.target.value)} />
+          </label>
+          <div className="school-option-list">
+            {schoolOptions.map((school) => (
+              <button className={draftSchool === school ? 'selected' : ''} key={school} type="button" onClick={() => setDraftSchool(school)}>
+                <span>{school}</span>
+                {draftSchool === school && <Check size={20} aria-hidden="true" />}
+              </button>
+            ))}
+            {schoolOptions.length === 0 && <p className="school-empty-state">Sekolah tidak ditemukan.</p>}
+          </div>
+        </div>
+      </div>
+      <button className="school-picker-primary" disabled={!draftSchool} type="button" onClick={confirmSelection}>Pilih Sekolah</button>
+    </BottomSheet>
+  )
+}
+
+function OptionSixNewAccountDetails({ childEmail, childName, childPhone, childPhoneMatchesParent = false, childSchool = '', errorFields, grade, onToggleParentlessChild, parentName = '', parentlessMatches = [], parentlessRelationConfirmed = false, parentPhone, selectedParentlessChildIds = [], setChildEmail, setChildName, setChildPhone, setChildPhoneMatchesParent = () => {}, setChildSchool = () => {}, setGrade, setParentName = () => {}, setParentPhone }: {
   childEmail: string
   childName: string
   childPhone: string
+  childPhoneMatchesParent?: boolean
+  childSchool?: string
   errorFields?: Set<string>
   grade: string
   onToggleParentlessChild?: (profile: ChildProfile) => void
+  parentName?: string
   parentlessMatches?: ChildProfile[]
   parentlessRelationConfirmed?: boolean
   parentPhone: string
@@ -6292,7 +6488,10 @@ function OptionSixNewAccountDetails({ childEmail, childName, childPhone, errorFi
   setChildEmail: (value: string) => void
   setChildName: (value: string) => void
   setChildPhone: (value: string) => void
+  setChildPhoneMatchesParent?: (value: boolean) => void
+  setChildSchool?: (value: string) => void
   setGrade: (value: string) => void
+  setParentName?: (value: string) => void
   setParentPhone: (value: string) => void
 }) {
   const parentPhoneAccount = canCheckParentPhone(parentPhone) ? getRegisteredParentAccount(parentPhone) : null
@@ -6304,7 +6503,8 @@ function OptionSixNewAccountDetails({ childEmail, childName, childPhone, errorFi
         <h4 className="draft-data-subtitle">Data Orang Tua</h4>
         <ActiveDataReminder type="orang-tua" />
         <div className="editable-info-list">
-          <EditableInfoListRow key="new-parent-phone" error={errorFields?.has('No. HP Orang Tua')} label="No. HP Orang Tua" placeholder="Lengkapi No. HP" required value={parentPhone} onChange={setParentPhone} />
+          <EditableInfoListRow key="new-parent-name" error={errorFields?.has('Nama Orang Tua')} label="Nama Orang Tua" placeholder="Lengkapi nama" required value={parentName} onChange={setParentName} />
+          <EditableInfoListRow key="new-parent-phone" error={errorFields?.has('No. HP Orang Tua')} label="No. HP Aktif Orang Tua" placeholder="Lengkapi No. HP" required value={parentPhone} onChange={setParentPhone} />
         </div>
         {canCheckParentPhone(parentPhone) && parentlessMatches.length === 0 && <ParentPhoneCheckResult account={parentPhoneAccount} mode="new" phone={parentPhone} />}
         {parentlessMatches.length > 0 && (
@@ -6324,7 +6524,27 @@ function OptionSixNewAccountDetails({ childEmail, childName, childPhone, errorFi
           <div className="editable-info-list">
             <EditableInfoListRow key="new-account-child-name" error={errorFields?.has('Nama Anak')} label="Nama Anak" placeholder="Lengkapi nama" required value={childName} onChange={setChildName} />
             <EditableInfoListRow key="new-account-child-grade" error={errorFields?.has('Kelas Anak')} label="Kelas Anak" options={GRADE_OPTIONS} placeholder="Pilih kelas" required value={grade} onChange={setGrade} />
-            <EditableInfoListRow key="new-account-child-phone" error={errorFields?.has('No. HP Anak')} label="No. HP Anak" placeholder="Lengkapi No. HP" required value={childPhone} onChange={setChildPhone} />
+            <SchoolSelectorRow error={errorFields?.has('Nama Sekolah')} value={childSchool} onChange={setChildSchool} />
+            <EditableInfoListRow
+              key="new-account-child-phone"
+              helper={(
+                <ChildPhoneSameParentToggle
+                  checked={childPhoneMatchesParent}
+                  disabled={!canCheckParentPhone(parentPhone)}
+                  onChange={setChildPhoneMatchesParent}
+                />
+              )}
+              error={errorFields?.has('No. HP Anak')}
+              inputDisabled={childPhoneMatchesParent}
+              label="No. HP Aktif Anak"
+              placeholder="Lengkapi No. HP"
+              required
+              value={childPhone}
+              onChange={setChildPhone}
+              onStartEdit={() => {
+                if (childPhoneMatchesParent) setChildPhoneMatchesParent(false)
+              }}
+            />
             <EditableInfoListRow key="new-account-child-email" error={errorFields?.has('Email Anak')} label="Email Anak" optional placeholder="Lengkapi email" value={childEmail} onChange={setChildEmail} />
           </div>
         </section>
@@ -6608,9 +6828,10 @@ function BottomCta({ contextLabel = 'Total Harga', contextValue = 'Rp880.000', d
   )
 }
 
-function ReviewSheet({ accountStatus, childName, consent, grade, lookupState, parentName, parentPhone, phone, profileTarget, selectedParentLookupProfileId, selectedChildSearchProfileId, setConsent, usesParentIdentity, onClose, onContinue }: {
+function ReviewSheet({ accountStatus, childName, childPhone, consent, grade, lookupState, parentName, parentPhone, phone, profileTarget, selectedParentLookupProfileId, selectedChildSearchProfileId, setConsent, usesParentIdentity, onClose, onContinue }: {
   accountStatus: AccountStatus | null
   childName: string
+  childPhone: string
   consent: boolean
   grade: string
   lookupState: LookupState
@@ -6646,7 +6867,8 @@ function ReviewSheet({ accountStatus, childName, consent, grade, lookupState, pa
   const usesExistingProfile = Boolean(selectedSearchProfile || (parentAccount && profileTarget === 'existing' && selectedProfile))
   const reviewType = selectedSearchProfile || parentAccount ? 'Aktivasi paket' : isNewAccount ? 'Pembuatan akun' : 'Konversi akun'
   const title = selectedSearchProfile || parentAccount ? 'Review tujuan paket' : isNewAccount ? 'Review pembuatan akun' : 'Review migrasi akun'
-  const accessCopy = parentAccount || isNewAccount ? 'Username dan PIN dikirim ke WhatsApp Orang Tua.' : 'Login anak berubah ke Username dan PIN.'
+  const targetChildPhone = selectedSearchProfile?.contact ?? selectedProfile?.contact ?? childPhone
+  const accessCopy = getLearningAccessCopy(parentDisplayPhone, targetChildPhone)
   const parentPhoneWillChange = Boolean(selectedSearchProfile && parentPhone && normalizePhoneDigits(parentPhone) !== normalizePhoneDigits(selectedSearchProfile.parentPhone ?? ''))
   const changeOverviewItems = [
     parentPhoneWillChange ? `No. HP Orang Tua diubah dari ${selectedSearchProfile?.parentPhone} ke ${parentPhone}.` : null,
